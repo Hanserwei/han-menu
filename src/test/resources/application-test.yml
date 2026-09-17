@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/han_menu_test}
+    username: ${TEST_DB_USERNAME:han_menu}
+    password: ${TEST_DB_PASSWORD}
+  modulith:
+    events:
+      republish-outstanding-events-on-restart: false
