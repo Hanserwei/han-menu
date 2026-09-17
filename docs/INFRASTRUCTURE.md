@@ -2,24 +2,27 @@
 
 ## 当前环境
 
-按用户最新指示，本项目现使用本机独立部署的 Redis 和 RustFS，不连接 Hannote 的 PVE 实例。
+按用户最新指示，本项目的 PostgreSQL、Redis 和 RustFS 已全部纳入同一份 Compose 和 systemd
+服务管理，不连接 Hannote 的 PVE 实例。
 版本已于 2026-09-17 核对官方正式发布，运行容器内的版本命令也已验证。
 
 | 服务 | 本机地址 | 版本 | 数据位置 |
 | --- | --- | --- | --- |
-| PostgreSQL | `127.0.0.1:5432` | 18.6，已有 pg18 容器 | 继续使用原项目开发库和测试库 |
+| PostgreSQL | `127.0.0.1:5432` | 18.6，han-menu-postgres | `han-menu-postgres-data` 命名卷；保留原集群的全部数据库 |
 | Redis | `127.0.0.1:6379` | 8.10.1 | `han-menu-redis-data` 命名卷，启用 AOF |
 | RustFS S3 | `http://127.0.0.1:9000` | 1.0.0 正式版 | `han-menu-rustfs-data` 命名卷 |
 | RustFS 控制台 | `http://127.0.0.1:9001/rustfs/console/` | 同一 RustFS 实例 | 使用 .env 中的 Access Key / Secret Key 登录 |
 
 官方发布：[Redis 8.10.1](https://github.com/redis/redis/releases/tag/8.10.1)、
 [RustFS 1.0.0](https://github.com/rustfs/rustfs/releases/tag/1.0.0)。Compose 固定具体镜像版本，
-配置见 `infra/compose.yml`。两个新服务只绑定回环地址，当前主机的用户服务已启用自动启动。
+配置见 `infra/compose.yml`。Redis、RustFS 只绑定回环地址；PostgreSQL 在本次迁移中保留原有
+`0.0.0.0:5432` 绑定，以兼容原访问方式。新环境默认使用 `127.0.0.1`，由
+`POSTGRES_BIND_ADDRESS` 控制。当前主机的统一用户服务已启用自动启动。
 
 ### 启停与验证
 
 ```bash
-# 首次配置按 README 顺序先准备 PostgreSQL，再准备新增中间件。
+# 一次性启动三项服务，并幂等准备项目数据库、账号和 Bucket。
 python3 scripts/middleware.py up
 python3 scripts/middleware.py install-service
 
@@ -39,14 +42,37 @@ python3 scripts/middleware.py verify
 部署脚本使用系统 Python 标准库和 podman-compose，不新增应用 SDK。它只允许本机端点，不能
 拿来初始化远端 Hannote 资源。实际 Spring 缓存与图片存储适配器仍按 P1/P2 实施。
 
+旧 `scripts/setup-local-db.py` 保留为 `middleware.py up` 的兼容入口，不再独立启动 `pg18`。
+
+### 原 pg18 的迁移记录与回退点
+
+2026-09-17 完成同版本迁移，过程如下：
+
+1. 检查原集群数据库和客户端连接，完成全库 `pg_dumpall` 逻辑备份。
+2. 正常停止 `pg18` 后，将 `pg18-lab-data` 冷导出，再导入新卷 `han-menu-postgres-data`。
+3. 使用相同 PostgreSQL 18.6 镜像创建 Compose 服务 `postgres`，容器为 `han-menu-postgres`。
+4. 比较迁移前后全库导出；仅去掉 pg_dump 每次生成的随机限制标识后，内容完全一致。
+5. 验证受限应用账号对开发库/测试库的认证和读写；验证新集群初始化与重复执行的幂等性。
+
+保留的数据库为 `postgres`、`pg18_lab`、`han_menu`、`han_menu_test`，账号和密码不变。
+原 `pg18` 容器已停止，原 `pg18-lab-data` 卷未删除。不要将旧容器与新容器同时启动到 5432 端口。
+
+受保护备份位于 `.local/backups/pg18-20260917T142030Z/`，包含 `cluster.sql`、`volume.tar`、
+校验和、迁移前配置和导出比对结果。备份目录及原卷是迁移时刻的回退点，不包含迁移后的新写入。
+若需要临时回退，先停止统一 systemd 服务，再启动原 `pg18`；回退前应明确如何保留迁移后的数据。
+本次未执行回退，也未清理任何旧数据卷。
+
 ### 凭证、资源与已验证范围
 
 - 随机生成的 Redis 密码、RustFS Access Key / Secret Key 写入权限为 600 的 `.env`，未进入 Git。
+- PostgreSQL 管理员密码保存在 `POSTGRES_PASSWORD`，与应用的 `DB_PASSWORD` 分离；迁移时保留原值。
 - 当前是项目专用开发实例，RustFS 启动凭证同时用于控制台管理；后续应用接入时按需要拆分受限应用凭证。
 - Redis 使用 `han-menu:` 前缀；RustFS 已建立私有 `han-menu`、`han-menu-test` 两个 Bucket。
 - `.local/redis.conf` 含运行凭证，所在目录权限为 700，整个目录被 Git 忽略；单文件允许容器内 Redis 用户读取。
 - 已验证本机映射端口上的 Redis 认证、写入、读取、删除，以及两个 S3 桶的上传、读取、删除。
+- 已验证 PostgreSQL 受限角色的开发/测试库认证、建表、写入、读取与事务回滚；Java 集成测试验证宿主机映射端口。
 - 已验证容器重启后 Redis 键和 S3 对象保持，验证数据随后删除；控制台页面返回 HTTP 200。
+- PostgreSQL 纳管后再次统一重启三项服务，确认数据库记录、缓存键、存储对象和原凭证均保持；验证数据已清理。
 - 根路径 `http://127.0.0.1:9001/` 对普通 HTTP 探测可能返回 S3 的 403，请使用上面的明确控制台路径。
 
 ## PVE 备选资源盘点
@@ -57,7 +83,7 @@ python3 scripts/middleware.py verify
 2026-09-17 根据用户提供的 `/home/hanserwei/.config/hannote` 检查了 PVE 内网部署。
 该目录的 `dev.env` 提供连接信息，`deploy/*/compose.yml` 提供部署版本和拓扑。
 已有远程 Redis 和 S3 兼容对象存储可作为接入候选，无需另建一套基础服务。
-本地 `pg18`（PostgreSQL 18.6）仍是当前工程使用的开发数据库。
+本地 PostgreSQL 18.6 现由 `han-menu-postgres` 承载，见上面的迁移记录。
 
 ### 已验证的核心服务
 

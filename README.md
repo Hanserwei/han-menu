@@ -12,16 +12,16 @@
 
 ## 本地启动
 
-已复用 Podman 的 `pg18`（PostgreSQL 18.6），开发库为 `han_menu`，测试库为 `han_menu_test`。
+PostgreSQL 18.6、Redis 8.10.1、RustFS 1.0.0 均由同一份 Compose 和用户级 systemd 服务管理。
+原 `pg18` 数据已迁入 `han-menu-postgres`，开发库为 `han_menu`，测试库为 `han_menu_test`。
 本地凭证位于被 Git 忽略的 `.env`。JDK 使用 25，Maven Wrapper 固定为 3.9.16。
 
 ```bash
-# 首次配置；重复执行不会修改已有账号密码或覆盖 .env。
-./scripts/setup-local-db.py
+# 首次配置；自动准备三项中间件和数据库，重复执行不会重置已有账号密码。
+python3 scripts/middleware.py up
 ./scripts/install-hooks.sh
 
-# 新增中间件：独立 Redis 和 RustFS，不修改已有 PostgreSQL 容器。
-python3 scripts/middleware.py up
+# 安装统一的用户级启动管理服务。
 python3 scripts/middleware.py install-service
 
 # 完整质量检查，包含真实 PostgreSQL 集成测试。
@@ -32,7 +32,7 @@ python3 scripts/middleware.py install-service
 ```
 
 `GET /actuator/health` 用于检查应用和数据库连接。Spring Boot 不自动读取 `.env`，IDE 启动时
-需配置环境变量；命令行使用 `with-env.sh`。容器名称不同时可以设置 `PG_CONTAINER`。
+需配置环境变量；命令行使用 `with-env.sh`。旧的 `setup-local-db.py` 命令保留为统一启动的兼容入口。
 
 本机 Redis 8.10.1 位于 `127.0.0.1:6379`，RustFS 1.0.0 的 S3 接口位于 `127.0.0.1:9000`，
 控制台为 [RustFS Console](http://127.0.0.1:9001/rustfs/console/)。凭证在 `.env` 中。
@@ -104,6 +104,10 @@ CI 配置已经入库，目前尚未运行远程 CI。
 `target/failsafe-reports/`，模块图及说明位于 `target/spring-modulith-docs/`。
 
 ## 数据库历史
+
+原 `pg18` 的整个数据卷已复制到 `han-menu-postgres-data`，包括 `pg18_lab`、项目开发/测试库和
+原账号信息；迁移前后全库逻辑导出已核对一致。原容器保持停止状态，原卷及受保护备份保留为回退点。
+具体管理和回退说明见 [中间件清单](docs/INFRASTRUCTURE.md)。
 
 上一版演示业务代码与业务测试已移除。V1、V2 已在开发库执行，因此保留历史迁移文件；V3 将原表
 重命名为 `legacy_demo_catalog_dish`、`legacy_demo_menu_entry`，保留任何已有数据。

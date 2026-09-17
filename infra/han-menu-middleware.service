@@ -1,5 +1,5 @@
 [Unit]
-Description=Han Menu local Redis and RustFS
+Description=Han Menu local PostgreSQL, Redis and RustFS
 After=network-online.target
 Wants=network-online.target
 
