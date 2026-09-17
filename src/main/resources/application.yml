@@ -2,10 +2,12 @@ spring:
   application:
     name: han-menu
   datasource:
+    # 开发连接从环境读取；密码不提供默认值，避免误用固定凭证。
     url: ${DB_URL:jdbc:postgresql://localhost:5432/han_menu}
     username: ${DB_USERNAME:han_menu}
     password: ${DB_PASSWORD}
   threads:
+    # 使用 JDK 的虚拟线程支持；业务代码仍须明确事务和异步执行边界。
     virtual:
       enabled: true
   mvc:
@@ -13,12 +15,16 @@ spring:
       enabled: true
   modulith:
     runtime:
+      # 启动时再次检查模块边界，避免仅依赖开发者主动运行测试。
       verification-enabled: true
     events:
       jdbc:
         schema-initialization:
+          # 事件登记表交给 Flyway 管理，升级结构时新增版本化迁移。
           enabled: false
+      # 当前按单实例开发配置；业务监听器实现时必须支持重复投递。
       republish-outstanding-events-on-restart: true
+      # 事件登记用于可靠投递，消费完成后删除；它不是业务审计记录。
       completion-mode: delete
 server:
   address: ${SERVER_ADDRESS:127.0.0.1}

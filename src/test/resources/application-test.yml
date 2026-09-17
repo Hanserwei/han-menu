@@ -1,8 +1,10 @@
 spring:
   datasource:
+    # 测试使用独立数据库；TestDatabase 为每个上下文再分配隔离 schema。
     url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/han_menu_test}
     username: ${TEST_DB_USERNAME:han_menu}
     password: ${TEST_DB_PASSWORD}
   modulith:
     events:
+      # 测试由用例显式触发事件恢复，避免启动时隐式重投干扰断言。
       republish-outstanding-events-on-restart: false

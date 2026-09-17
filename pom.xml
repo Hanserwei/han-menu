@@ -13,7 +13,7 @@
   <artifactId>han-menu</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>han-menu</name>
-  <description>A domain-driven modular monolith for learning Spring Modulith</description>
+  <description>DDD modular monolith foundation for a takeaway ordering system</description>
   <properties>
     <java.version>25</java.version>
     <spring-modulith.version>2.1.1</spring-modulith.version>

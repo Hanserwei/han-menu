@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
-# Validate the exact staged tree; reject partial staging instead of hiding changes in a stash.
+# 扫描工作区前要求其与暂存区一致，确保实际提交的代码就是已经验证的代码。
 if ! git diff --quiet; then
   echo "Stage all code changes before committing so the verified tree matches the index." >&2
   exit 1

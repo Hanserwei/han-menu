@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create isolated project databases inside the existing pg18 Podman container."""
+"""复用已有 Podman PostgreSQL 容器，准备项目独立的开发库、测试库和本地凭证。"""
 
 import os
 from pathlib import Path
@@ -13,7 +13,7 @@ CONTAINER = os.environ.get("PG_CONTAINER", "pg18")
 
 
 def sql(statement):
-    """Use the container's existing administrator without exposing its password."""
+    """使用容器内已有管理员执行 SQL，避免将密码拼接到命令行或输出到日志。"""
     return subprocess.run(
         ["podman", "exec", "-i", CONTAINER, "sh", "-c",
          'exec psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-postgres}" -d postgres -At'],

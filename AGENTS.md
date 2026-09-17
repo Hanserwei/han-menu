@@ -1,21 +1,39 @@
-# Project engineering rules
+# 项目开发约定
 
-- Use JDK 25 and the checked-in Maven Wrapper.
-- This is a single deployable Spring Modulith application. Group by bounded context first,
-  then domain/application/infrastructure/web. Do not introduce global controller/service/dao layers.
-- Keep domain packages free of Spring, JDBC, ORM, web and validation framework dependencies.
-- Cross-module dependencies must use explicitly exported named interfaces. Never import another
-  module's internals, query its tables, or introduce cross-module foreign keys.
-- Put use-case transactions in application services; persist integration events in the same
-  transaction as aggregate changes. Consumers must be idempotent.
-- Follow Google Java Style. Run `./mvnw spotless:apply` after Java edits.
-- Every completed code change MUST pass `./scripts/verify.sh` before committing. This runs
-  Google formatting, Google Checkstyle (including warnings and test sources), unit tests,
-  module/layer architecture verification and real PostgreSQL integration tests.
-- Never bypass the hook with `--no-verify`, skip checks/tests, or reduce rules to make a build pass.
-- Run `./scripts/install-hooks.sh` after cloning. Local hooks can be bypassed externally;
-  configure the CI Verify job as a required check in the remote repository when one is available.
-- Keep credentials in ignored `.env`; never commit local passwords or use the development
-  database for integration tests. Tests use isolated temporary schemas in the test database.
-- Use stable releases. Prefer the Spring Boot/Modulith BOM versions for transitive libraries;
-  check official compatibility and run full verification before upgrading.
+## 目标与范围
+
+- 项目是面向完整外卖业务的 DDD 模块化单体，业务参考见 `docs/REFACTORING_PLAN.md`。
+- 当前阶段只维护骨架和计划；未经新的业务实施指令，不新增演示流程或占位成功接口。
+- 使用 JDK 25 和已提交的 Maven Wrapper，一个工程构建一个可执行 JAR。
+- 先按限界上下文组织模块，再在内部划分 domain/application/infrastructure/web。
+
+## 面向对象与 DDD
+
+- 聚合根通过明确的业务方法维护状态和不变量，不通过任意 setter 改变业务状态。
+- 值对象优先不可变，可使用 record 并在构造时验证约束；record 不代替有生命周期的聚合。
+- 应用服务负责用例编排和事务；领域对象负责业务规则，避免把所有判断堆进 ServiceImpl。
+- 使用构造器注入、接口隔离和组合，按真实变化点引入策略；不为所有类机械创建接口。
+- 仓储和外部能力通过端口依赖倒置，不引入无业务意义的 BaseEntity/BaseService 继承体系。
+- domain 仅依赖 Java 和本模块领域类型，不引入 Spring、SQL、HTTP、校验框架或外部 SDK。
+- 跨模块只使用明确导出的 api/events，不访问其他模块内部类、业务表或建立跨模块外键。
+- 业务状态与事件登记同事务提交；消费者负责幂等。外部支付请求不放入长数据库事务。
+- DTO、持久化对象、领域对象职责分离，映射显式完成，不能用反射拷贝绕过领域规则。
+
+## 中文注释和 Google Java 规范
+
+- 自编 Java 代码使用中文包说明、类型和方法 Javadoc；关键逻辑说明设计原因和约束。
+- Javadoc 摘要先描述职责，再按需解释不变量、事务边界、幂等、并发或资源生命周期。
+- 参数、返回值、重要业务异常应有明确说明；不添加无内容的 @param/@return/@throws。
+- Google 默认 SummaryJavadoc 规则要求摘要首句以英文句点 `.` 结束；正文使用中文。
+- 注释随行为同步更新，不堆砌逐行翻译或保留已失效的描述。
+- 自动生成的 Maven Wrapper 和已执行的历史 SQL 迁移保持原样，不为注释改动破坏校验和。
+- Java 编辑后运行 `./mvnw spotless:apply`，不得关闭 Google 规则来放行违规代码。
+
+## 验证与提交
+
+- 每次编码完成后、提交前必须通过 `./scripts/verify.sh`：格式、Checkstyle、架构测试和真实数据库集成测试。
+- 不得使用 `--no-verify`、跳过测试或降低已有实现类的架构约束以通过构建。
+- 当前空骨架允许 ArchUnit 的空匹配集合；加入类后依赖规则必须完整执行。
+- 克隆后运行 `./scripts/install-hooks.sh`。远程仓库建立后将 CI 验证设为必需检查。
+- 密钥仅保存在被忽略的 `.env` 或环境变量；集成测试必须使用独立测试库和临时 schema。
+- 优先选用稳定版本和 Spring Boot/Modulith BOM；引入新依赖前核对兼容性并完整验证。
