@@ -21,6 +21,7 @@ public final class IdentityException extends RuntimeException {
     FORBIDDEN,
     NOT_FOUND,
     CONFLICT,
+    VERSION_CONFLICT,
     INVALID_INPUT,
     RATE_LIMITED,
     UNAVAILABLE

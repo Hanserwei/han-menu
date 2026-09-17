@@ -46,6 +46,12 @@ class ArchitectureTest {
         .resideOutsideOfPackages("java..", "com.hanserwei.hanmenu..domain..")
         .allowEmptyShould(true)
         .check(classes);
+    // 业务持久化统一使用 ORM；JDBC 仅允许出现在测试和外部基础设施工具中。
+    noClasses()
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage("org.springframework.jdbc..", "java.sql..")
+        .check(classes);
     noClasses()
         .that()
         .resideInAPackage("..application..")

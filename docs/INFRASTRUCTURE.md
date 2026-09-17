@@ -42,7 +42,7 @@ python3 scripts/middleware.py verify
 部署脚本使用系统 Python 标准库和 podman-compose，不新增应用 SDK。它只允许本机端点，不能
 拿来初始化远端 Hannote 资源。P1 已接入 Redis 登录限流；商品缓存与图片存储适配器按 P2 实施。
 
-旧 `scripts/setup-local-db.py` 保留为 `middleware.py up` 的兼容入口，不再独立启动 `pg18`。
+三项服务的唯一启动入口是 `python3 scripts/middleware.py up`，不再保留单独的数据库启动脚本。
 
 ### 原 pg18 的迁移记录与回退点
 
@@ -128,7 +128,7 @@ P1 的运行与完整测试需要 PostgreSQL 和 Redis。RustFS 已部署，图�
 | 图片对象存储 | 本机已就绪，P2 接入 | RustFS 1.0.0，菜品和套餐图片 | 两个专用 Bucket 已建立，后续编写存储端口与 SDK 适配器 |
 | 微信小程序账号 | P3 真实登录联调 | code 换取用户身份 | AppID、AppSecret 的本地环境变量、开发者工具权限及合法域名配置 |
 | 微信支付商户资源 | P5 真实支付联调 | 下单、支付通知、退款和对账 | 可用商户号、AppID 绑定、API v3 配置、平台公钥/证书方案和公网 HTTPS 回调地址 |
-| Nginx 或等价反向代理 | P7；若提前使用旧后台则提前准备 | 前端静态资源、旧 `/api/` 转发、WebSocket、TLS | 监听地址、端口、域名、证书位置及静态文件目录 |
+| Nginx 或等价反向代理 | P7 | 新客户端静态资源、`/api/v1` 转发、WebSocket、TLS | 监听地址、端口、域名、证书位置及静态文件目录 |
 
 当前 PostgreSQL、Redis、RustFS 都已准备好，无需再安排这三项基础服务。
 身份模块已实现数据库会话与 Redis 限流，商品缓存和图片上传仍属于后续阶段。
@@ -172,3 +172,9 @@ Bucket 或对象前缀；测试只删除自己上传的对象。图片可选受�
 
 未来需要跨进程订阅或多实例推送时，再评估消息中间件；需要多实例任务抢占时，先明确租约与锁策略。
 依据：[Spring Modulith 事件机制](https://docs.spring.io/spring-modulith/reference/events.html)。
+
+## 新应用数据库基线
+
+项目按全新版本建立 V1 身份模型和 V2 JPA 事件登记。开发初期试验结构与用户数据不作为兼容对象。
+本轮重建仅涉及 `han_menu` 与 `han_menu_test` 的项目 schema，其他数据库和 PVE 服务不变。
+重建前的本地备份位于被忽略的 `.local/backups/`，不参与正常启动。

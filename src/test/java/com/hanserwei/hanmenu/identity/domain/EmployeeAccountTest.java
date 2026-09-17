@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -59,16 +60,16 @@ class EmployeeAccountTest {
 
   @Test
   void normalizesUsernamesAndHidesPersonalInformation() {
-    var profile = new EmployeeProfile("  Staff_01  ", " 测试员工 ", "13800138000", "1", "");
+    var profile = new EmployeeProfile("  Staff_01  ", " 测试员工 ", "13800138000");
     assertThat(profile.username()).isEqualTo("staff_01");
-    assertThat(profile.name()).isEqualTo("测试员工");
-    assertThat(profile.toString()).doesNotContain(profile.name(), profile.phone());
-    assertThatThrownBy(() -> new EmployeeProfile("bad user", "姓名", "", "2", ""))
+    assertThat(profile.displayName()).isEqualTo("测试员工");
+    assertThat(profile.toString()).doesNotContain(profile.displayName(), profile.phone());
+    assertThatThrownBy(() -> new EmployeeProfile("bad user", "姓名", ""))
         .isInstanceOf(IdentityException.class);
   }
 
   private EmployeeAccount employee(EmployeeAccount.Role role) {
     return EmployeeAccount.create(
-        1, new EmployeeProfile("staff", "员工", "", "2", ""), "example-hash", role, NOW);
+        UUID.randomUUID(), new EmployeeProfile("staff", "员工", ""), "example-hash", role, NOW);
   }
 }

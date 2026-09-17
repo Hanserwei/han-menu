@@ -9,8 +9,23 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/han_menu}
     username: ${DB_USERNAME:han_menu}
     password: ${DB_PASSWORD}
+  jpa:
+    # 禁止在控制器序列化期间隐式访问数据库；实体结构由 Flyway 建立，Hibernate 只校验。
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  jackson:
+    # 全新接口严格拒绝未定义字段，避免客户端拼错字段或试图批量赋值。
+    deserialization:
+      fail-on-unknown-properties: true
   data:
     redis:
+      repositories:
+        enabled: false
       host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
       username: ${REDIS_USERNAME:}
@@ -24,16 +39,13 @@ spring:
       enabled: true
   mvc:
     problemdetails:
-      enabled: true
+      # 工程统一处理 RFC 9457 扩展字段，避免默认 Advice 与模块 Advice 竞争。
+      enabled: false
   modulith:
     runtime:
       # 启动时再次检查模块边界，避免仅依赖开发者主动运行测试。
       verification-enabled: true
     events:
-      jdbc:
-        schema-initialization:
-          # 事件登记表交给 Flyway 管理，升级结构时新增版本化迁移。
-          enabled: false
       # 当前按单实例开发配置；业务监听器实现时必须支持重复投递。
       republish-outstanding-events-on-restart: true
       # 事件登记用于可靠投递，消费完成后删除；它不是业务审计记录。
@@ -63,4 +75,10 @@ han-menu:
 springdoc:
   swagger-ui:
     persist-authorization: false
-  paths-to-match: /admin/employee/**, /admin/employee
+  paths-to-match: /api/v1/**
+logging:
+  pattern:
+    level: "%5p [requestId=%X{requestId:-}]"
+  level:
+    # 数据库厂商错误可能带用户名等拒绝值，HTTP 层统一转换为安全的错误分类。
+    org.hibernate.orm.jdbc.error: "OFF"

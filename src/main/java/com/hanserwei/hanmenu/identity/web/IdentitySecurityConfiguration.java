@@ -51,7 +51,7 @@ class IdentitySecurityConfiguration {
                 authorize
                     .dispatcherTypeMatchers(DispatcherType.ERROR)
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/admin/employee/login")
+                    .requestMatchers(HttpMethod.POST, "/api/v1/sessions")
                     .permitAll()
                     .requestMatchers(
                         HttpMethod.GET,
@@ -62,13 +62,13 @@ class IdentitySecurityConfiguration {
                         "/swagger-ui.html",
                         "/swagger-ui/**")
                     .permitAll()
-                    .requestMatchers(HttpMethod.GET, "/admin/employee/me")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/me")
                     .authenticated()
-                    .requestMatchers(HttpMethod.POST, "/admin/employee/logout")
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/sessions/current")
                     .authenticated()
-                    .requestMatchers(HttpMethod.PUT, "/admin/employee/password")
+                    .requestMatchers(HttpMethod.PUT, "/api/v1/me/password")
                     .authenticated()
-                    .requestMatchers("/admin/employee", "/admin/employee/**", "/actuator/info")
+                    .requestMatchers("/api/v1/employees", "/api/v1/employees/**", "/actuator/info")
                     .hasRole("ADMIN")
                     .anyRequest()
                     .denyAll())
@@ -81,7 +81,7 @@ class IdentitySecurityConfiguration {
                     .accessDeniedHandler(
                         (request, response, exception) -> {
                           var current = SecurityContextHolder.getContext().getAuthentication();
-                          Long actor =
+                          UUID actor =
                               current != null
                                       && current.getPrincipal() instanceof StaffIdentity identity
                                   ? identity.employeeId()
@@ -106,27 +106,17 @@ class IdentitySecurityConfiguration {
     return new OpenAPI()
         .info(
             new Info()
-                .title("Han Menu 身份与员工接口")
-                .version("P1")
-                .description(
-                    "请求头 token 与 Bearer 二选一。管理员管理员工，普通员工仅能访问本人身份、"
-                        + "退出和修改密码。业务错误保留 code/msg/data，并使用真实 HTTP 错误状态。"))
+                .title("Han Menu API")
+                .version("v1")
+                .description("全新资源接口：仅支持 Bearer 认证；成功返回资源 DTO，失败返回 RFC 9457 Problem Details。"))
         .components(
             new Components()
-                .addSecuritySchemes(
-                    "employeeToken",
-                    new SecurityScheme()
-                        .type(SecurityScheme.Type.APIKEY)
-                        .in(SecurityScheme.In.HEADER)
-                        .name("token")
-                        .description("旧后台使用的登录令牌"))
                 .addSecuritySchemes(
                     "bearerToken",
                     new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")
                         .bearerFormat("Opaque")))
-        .addSecurityItem(new SecurityRequirement().addList("employeeToken"))
         .addSecurityItem(new SecurityRequirement().addList("bearerToken"));
   }
 

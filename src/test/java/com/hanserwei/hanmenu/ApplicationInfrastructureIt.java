@@ -61,7 +61,7 @@ class ApplicationInfrastructureIt {
     }
   }
 
-  /** 确认迁移可重复验证、持久化事件表可用，并且旧演示表已退出当前业务命名空间. */
+  /** 验证全新数据库基线与 ORM 事件基础设施，不创建演示表或兼容结构. */
   @Test
   void appliesMigrationsAndProvidesPersistentEventInfrastructure() {
     flyway.validate();
@@ -74,7 +74,11 @@ class ApplicationInfrastructureIt {
                         + " WHERE table_schema = current_schema()")
                 .query(String.class)
                 .list())
-        .contains("event_publication", "flyway_schema_history")
-        .doesNotContain("catalog_dish", "menu_entry");
+        .containsExactlyInAnyOrder(
+            "event_publication",
+            "flyway_schema_history",
+            "identity_employee",
+            "identity_session",
+            "identity_audit");
   }
 }

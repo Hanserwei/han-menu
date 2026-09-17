@@ -3,22 +3,17 @@ package com.hanserwei.hanmenu.identity.domain;
 import java.util.Locale;
 import java.util.Objects;
 
-/** 员工档案值对象，在构造时统一规范化并保护字段约束，不包含登录凭证. */
-public record EmployeeProfile(
-    String username, String name, String phone, String sex, String idNumber) {
-  /** 校验用户名和个人资料；电话号码和身份证仅做格式校验，不表示已核验身份. */
+/** 账号资料值对象，仅收集身份管理需要的信息，构造时统一规范化并校验约束. */
+public record EmployeeProfile(String username, String displayName, String phone) {
+  /** 校验账号名、显示名称及可选联系电话，不承担独立人事档案的职责. */
   public EmployeeProfile {
     username = normalizeUsername(username);
-    name = Objects.requireNonNull(name, "员工姓名不能为空").strip();
+    displayName = Objects.requireNonNull(displayName, "显示名称不能为空").strip();
     phone = phone == null ? "" : phone.strip();
-    sex = sex == null ? "2" : sex;
-    idNumber = idNumber == null ? "" : idNumber.strip().toUpperCase(Locale.ROOT);
-    if (name.isBlank()
-        || name.length() > 50
-        || !phone.matches("(?:1[3-9][0-9]{9})?")
-        || !sex.matches("[012]")
-        || !idNumber.matches("(?:[0-9]{17}[0-9X])?")) {
-      throw new IdentityException(IdentityException.Reason.INVALID_INPUT, "员工资料格式不正确");
+    if (displayName.isBlank()
+        || displayName.length() > 50
+        || !phone.matches("(?:\\+?[1-9][0-9]{6,14})?")) {
+      throw new IdentityException(IdentityException.Reason.INVALID_INPUT, "账号资料格式不正确");
     }
   }
 
@@ -31,7 +26,7 @@ public record EmployeeProfile(
     return result;
   }
 
-  /** 防止调试输出意外包含员工个人资料. */
+  /** 调试输出不暴露个人资料. */
   @Override
   public String toString() {
     return "EmployeeProfile[资料已隐藏]";

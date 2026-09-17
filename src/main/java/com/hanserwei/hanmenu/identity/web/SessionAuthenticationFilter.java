@@ -28,7 +28,7 @@ final class SessionAuthenticationFilter extends OncePerRequestFilter {
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getRequestURI().substring(request.getContextPath().length());
-    return (path.equals("/admin/employee/login") && request.getMethod().equals("POST"))
+    return (path.equals("/api/v1/sessions") && request.getMethod().equals("POST"))
         || path.startsWith("/actuator/health")
         || path.startsWith("/v3/api-docs")
         || path.startsWith("/swagger-ui");
@@ -38,13 +38,12 @@ final class SessionAuthenticationFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws IOException, ServletException {
-    var legacy = Collections.list(request.getHeaders("token"));
     var bearer = Collections.list(request.getHeaders("Authorization"));
-    if (legacy.size() > 1 || bearer.size() > 1 || (!legacy.isEmpty() && !bearer.isEmpty())) {
-      responses.write(request, response, 400, "请只提供一种登录令牌");
+    if (bearer.size() > 1) {
+      responses.write(request, response, 400, "Authorization 请求头不能重复");
       return;
     }
-    String token = legacy.isEmpty() ? null : legacy.getFirst();
+    String token = null;
     if (!bearer.isEmpty()) {
       String value = bearer.getFirst();
       if (!value.regionMatches(true, 0, "Bearer ", 0, 7)) {

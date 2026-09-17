@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 登录、会话认证与退出用例，兼容旧客户端把 token 作为不透明字符串传递的方式. */
+/** 管理会话创建、认证与撤销，原始令牌仅在创建会话时交给调用方. */
 @Service
 public class EmployeeAuthentication {
   private final EmployeeRepository employees;
@@ -101,7 +101,7 @@ public class EmployeeAuthentication {
     return new StaffIdentity(
         account.id(),
         account.profile().username(),
-        account.profile().name(),
+        account.profile().displayName(),
         account.role().name(),
         account.securityVersion());
   }

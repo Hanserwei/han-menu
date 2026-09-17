@@ -2,11 +2,12 @@ package com.hanserwei.hanmenu.identity.domain;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 /** 保存令牌摘要和撤销版本的会话端口，原始令牌不能进入数据库. */
 public interface SessionRepository {
   /** 保存新会话；安全版本不匹配的会话后续不能通过认证. */
-  void add(String tokenHash, long employeeId, long securityVersion, Instant expiresAt);
+  void add(String tokenHash, UUID employeeId, long securityVersion, Instant expiresAt);
 
   /** 只返回未过期、未停用且安全版本匹配的账号. */
   Optional<EmployeeAccount> findActive(String tokenHash, Instant now);

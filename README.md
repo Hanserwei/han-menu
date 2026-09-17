@@ -1,125 +1,89 @@
-# Han Menu · 外卖系统
+# Han Menu · 全新外卖系统
 
-以苍穹外卖的业务能力为参考，使用 Java 25、Spring Boot 4.1.1 和 Spring Modulith 2.1.1
-构建 DDD 模块化单体。已完成项目骨架及 **P1：身份认证、员工管理、权限边界与接口契约**。
+参考苍穹外卖的业务能力，以 Java 25、Spring Boot 4.1.1、Spring Modulith 2.1.1 构建 DDD
+模块化单体。当前已实现 P1 身份与员工管理，其余业务按阶段开发。
 
-## 先阅读
+## 设计与使用
 
-- [P1 接口与使用说明](docs/P1_CONTRACT.md)：初始管理员、10 个员工接口、权限、会话和兼容约定。
-- [重构计划](docs/REFACTORING_PLAN.md)：源码分析、模块归属、面向对象建模、实施阶段和验收标准。
-- [原接口清单](docs/REFERENCE_API.md)：参考版本的 70 个 HTTP 处理方法、源码链接及前后端缺口。
-- [中间件准备清单](docs/INFRASTRUCTURE.md)：已有环境、后续需要的资源及接入信息。
-- [开发约定](AGENTS.md)：中文注释、Google Java 规范、依赖方向和提交门禁。
+- [架构决策](docs/ARCHITECTURE.md)：模块边界、面向对象、JPA、事务与接口设计。
+- [P1 API](docs/P1_CONTRACT.md)：新会话与员工资源、认证、错误、分页与版本约定。
+- [实施计划](docs/REFACTORING_PLAN.md)：九个业务模块及后续阶段。
+- [业务参考清单](docs/REFERENCE_CAPABILITIES.md)：从苍穹外卖识别的功能需求。
+- [中间件管理](docs/INFRASTRUCTURE.md)：本机 PostgreSQL、Redis、RustFS 的统一管理。
+- [开发约定](AGENTS.md)：中文注释、Google Java 规范和提交门禁。
 
-## 本地启动
+## 本机启动
 
-PostgreSQL 18.6、Redis 8.10.1、RustFS 1.0.0 均由同一份 Compose 和用户级 systemd 服务管理。
-原 `pg18` 数据已迁入 `han-menu-postgres`，开发库为 `han_menu`，测试库为 `han_menu_test`。
-本地凭证位于被 Git 忽略的 `.env`。JDK 使用 25，Maven Wrapper 固定为 3.9.16。
+环境：JDK 25、Python 3、Podman/podman-compose；Maven Wrapper 固定为 3.9.16。
 
 ```bash
-# 首次配置；自动准备三项中间件和数据库，重复执行不会重置已有账号密码。
+# 初始化三项中间件、项目数据库、Bucket 和本地随机凭证。
 python3 scripts/middleware.py up
+python3 scripts/middleware.py install-service
 ./scripts/install-hooks.sh
 
-# 安装统一的用户级启动管理服务。
-python3 scripts/middleware.py install-service
-
-# 完整质量检查，包含真实 PostgreSQL、Redis 集成测试。
+# 格式、规范、模块架构、真实 PostgreSQL/Redis 及 ORM 验证。
 ./scripts/verify.sh
 
 # 启动应用，默认监听 127.0.0.1:8080。
 ./scripts/with-env.sh ./mvnw spring-boot:run
 ```
 
-`GET /actuator/health` 用于检查应用、数据库和 Redis 连接。Spring Boot 不自动读取 `.env`，IDE 启动时
-需配置环境变量；命令行使用 `with-env.sh`。旧的 `setup-local-db.py` 命令保留为统一启动的兼容入口。
+应用环境变量在被 Git 忽略的 `.env`。初始管理员用户名默认 `admin`，密码由
+`IDENTITY_BOOTSTRAP_PASSWORD` 提供，首次启动自动创建，重启不重置。IDE 启动需配置相同环境变量。
 
-本机 Redis 8.10.1 位于 `127.0.0.1:6379`，RustFS 1.0.0 的 S3 接口位于 `127.0.0.1:9000`，
-控制台为 [RustFS Console](http://127.0.0.1:9001/rustfs/console/)。凭证在 `.env` 中。
-执行 `python3 scripts/middleware.py verify` 可验证实际读写；启动、停止及持久化说明见中间件清单。
+启动后可访问 [Swagger UI](http://127.0.0.1:8080/swagger-ui/index.html)、
+[OpenAPI JSON](http://127.0.0.1:8080/v3/api-docs) 和健康检查 `/actuator/health`。
+身份认证仅使用 Bearer 请求头。资源统一位于 `/api/v1`，错误采用 RFC 9457。
 
-初始管理员默认 `admin`，密码在 `.env` 的 `IDENTITY_BOOTSTRAP_PASSWORD` 中；首次启动自动创建，
-后续重启不重置密码。接口文档为 [Swagger UI](http://127.0.0.1:8080/swagger-ui/index.html)，
-机器可读契约为 [OpenAPI JSON](http://127.0.0.1:8080/v3/api-docs)。
-
-## 代码布局
+## 工程结构
 
 ```text
 com.hanserwei.hanmenu
 ├── HanMenuApplication
-├── identity       账号与权限
-├── customer       顾客档案、地址簿
+├── identity       员工身份与账号（已实现）
+├── customer       顾客与地址
 ├── shop           门店经营
 ├── catalog        分类、菜品、口味、套餐
 ├── cart           购物车
-├── ordering       下单、接单、履约、取消
-├── payment        支付、退款、渠道回调
-├── notification   来单、催单和消息投递
-└── reporting      工作台、统计和报表
+├── ordering       订单与履约
+├── payment        支付与退款
+├── notification   消息投递
+└── reporting      经营报表
 ```
 
-identity 已有实际领域聚合、用例、持久化和接口适配器；其他业务模块继续保留以下分层骨架。
-业务边界按真实用例逐步演化，没有占位成功接口。
+各模块使用 domain/application/infrastructure/web 分层，api/events 为明确发布的模块契约。
+identity 的持久化集中在 `infrastructure/persistence`：Spring Data 接口、JPA 实体及仓储适配器。
+领域模型封装业务行为，HTTP 仅返回专用 DTO。
 
-```text
-模块/
-├── package-info.java    @ApplicationModule：模块声明与依赖限制
-├── api/                 @NamedInterface：公开同步契约
-├── events/              @NamedInterface：公开集成事件
-├── domain/              聚合、实体、值对象、领域服务、仓储端口
-├── application/         用例编排、事务边界
-├── infrastructure/      持久化、缓存、外部服务适配器
-└── web/
-    ├── admin/           管理端适配器
-    └── app/             顾客端适配器
-```
+## 关键基线
 
-业务模块初始 `allowedDependencies = {}`，实现具体契约时才按白名单开放依赖。
-架构测试允许暂时为空的分层包，但对未来加入的实现类执行相同的依赖检查。
+- Spring Data JPA 4.1.1 / Hibernate 7.4.5.Final：ORM 映射、派生查询、版本锁、实体图。
+- Flyway：V1 身份模型，V2 Modulith JPA 事件登记；Hibernate 只校验结构，Open-in-View 关闭。
+- UUID 业务标识、UTC 时刻、必填更新版本、零基分页、严格 JSON 字段校验。
+- Spring Security、BCrypt、持久化会话、Redis 双维度登录限流、最小化安全审计。
+- Guava 33.7.1-jre、Commons Lang3 3.20.0、springdoc-openapi 3.1.1。
+- PostgreSQL 18.6、Redis 8.10.1、RustFS 1.0.0，统一 Compose/systemd 管理。
 
-## 当前已就绪的基础能力
+参考项目仅提供业务输入。本系统没有旧账号导入、旧 API 适配层或演示表。
+项目数据库为 `han_menu`、`han_menu_test`，与 `pg18_lab` 等其他数据库分开管理。
+当前代码尚未提供商品、订单、支付等后续业务接口。
 
-- Spring Modulith 模块边界检查、启动时验证和自动模块文档。
-- PostgreSQL 连接、Flyway 迁移、JDBC 事件登记基础设施。
-- Java 虚拟线程、Jackson 3、请求校验依赖、Problem Details 基础配置。
-- Spring Security、BCrypt、可撤销会话、员工权限、Redis 原子登录限流及脱敏审计。
-- springdoc-openapi 3.1.1 接口文档；Guava 33.7.1-jre、Commons Lang3 3.20.0 通用工具。
-- Google Java Format 1.36.1、Checkstyle 14.1.0 官方 Google 规则、Git 提交钩子及 CI。
-- 模块架构测试，以及使用隔离 PostgreSQL schema 的真实 HTTP 启动和迁移测试。
-
-员工认证与管理已经实现；Redis 已用于登录限流，商品缓存、图片上传与其他业务属于后续阶段。
-事件表已准备好；尚无业务发布者和监听器，当前不能宣称已经具备订单或支付的可靠投递流程。
-
-## 开发与提交
+## 开发与验证
 
 ```bash
-./mvnw spotless:apply    # 自动格式化 Java 源码
-./mvnw validate          # 格式检查和 Google Checkstyle 扫描
-./scripts/verify.sh      # 每次编码完成后、提交前必须通过
+./mvnw spotless:apply
+./scripts/verify.sh
 ```
 
-提交钩子会执行 `clean verify`，警告级 Checkstyle 违规也阻止提交，并扫描测试源码。
-新克隆需要手动安装钩子；远程仓库建立后，还需将 CI 的 `verify` 作业配置为分支保护必需检查。
-CI 配置已经入库，目前尚未运行远程 CI。
+提交钩子和 CI 使用完整验证流程。Google Checkstyle 警告也阻止提交，测试源码同样参与检查。
+新克隆需安装钩子，远程仓库建立后将 CI 验证设置为分支保护必需检查。
 
-中文 Javadoc 描述职责、约束、参数和重要副作用。为兼容 Google Checkstyle 原始规则，摘要首句
-以英文句点 `.` 结束，正文使用中文标点；检查规则保持启用。Maven 自动生成文件和已执行的历史
-迁移文件保留原内容，不为翻译注释而修改校验和。
+中文 Javadoc 摘要使用英文句点结束以满足 Google 原始检查规则，正文使用中文标点。
+领域规则、事务约束、异常和资源生命周期需要准确说明；不通过注释重复代码表面行为。
 
-检查报告位于 `target/checkstyle-result.xml`、`target/surefire-reports/`、
-`target/failsafe-reports/`，模块图及说明位于 `target/spring-modulith-docs/`。
+报告位于 `target/checkstyle-result.xml`、`target/surefire-reports/`、`target/failsafe-reports/`。
+模块文档和图位于 `target/spring-modulith-docs/`。
 
-## 数据库历史
-
-原 `pg18` 的整个数据卷已复制到 `han-menu-postgres-data`，包括 `pg18_lab`、项目开发/测试库和
-原账号信息；迁移前后全库逻辑导出已核对一致。原容器与旧数据卷已按用户要求删除，受保护的归档备份保留。
-具体管理和回退说明见 [中间件清单](docs/INFRASTRUCTURE.md)。
-
-上一版演示业务代码与业务测试已移除。V1、V2 已在开发库执行，因此保留历史迁移文件；V3 将原表
-重命名为 `legacy_demo_catalog_dish`、`legacy_demo_menu_entry`，保留任何已有数据。
-这些表不归属新业务模型，当前应用不访问它们。正式业务表随阶段实施新增迁移，不从示例模型演化。
-V4 创建身份模块的员工、会话和审计表，不导入参考项目的默认账号密码。
-
-集成测试使用名称以 `_test` 结尾的专用数据库，每个测试上下文创建随机 schema，关闭后清理。
-不使用 H2 替代 PostgreSQL，也不会在数据库不可用时跳过测试。
+集成测试使用随机 PostgreSQL schema 与 Redis 测试前缀，完成后清理。ORM 测试额外验证并发
+EntityManager 的乐观锁、单查询认证，以及业务更新和持久化事件登记的原子回滚。

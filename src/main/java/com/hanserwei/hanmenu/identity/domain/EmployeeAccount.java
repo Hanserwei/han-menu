@@ -2,6 +2,7 @@ package com.hanserwei.hanmenu.identity.domain;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * 员工账号聚合，通过业务方法维护启停用、资料和凭证状态.
@@ -9,7 +10,7 @@ import java.util.Objects;
  * <p>securityVersion 用于撤销既有会话，version 用于持久化乐观锁，两者职责不同。 管理员角色在当前阶段由初始化流程建立，普通员工接口不能提升角色或停用管理员。
  */
 public final class EmployeeAccount {
-  private final long id;
+  private final UUID id;
   private EmployeeProfile profile;
   private String passwordHash;
   private final Role role;
@@ -20,7 +21,7 @@ public final class EmployeeAccount {
   private Instant updatedAt;
 
   private EmployeeAccount(
-      long id,
+      UUID id,
       EmployeeProfile profile,
       String passwordHash,
       Role role,
@@ -29,10 +30,10 @@ public final class EmployeeAccount {
       long version,
       Instant createdAt,
       Instant updatedAt) {
-    if (id <= 0 || version < 0 || securityVersion < 0) {
+    if (version < 0 || securityVersion < 0) {
       throw new IllegalArgumentException("账号标识和版本不合法");
     }
-    this.id = id;
+    this.id = Objects.requireNonNull(id);
     this.profile = Objects.requireNonNull(profile);
     this.passwordHash = Objects.requireNonNull(passwordHash);
     this.role = Objects.requireNonNull(role);
@@ -48,13 +49,13 @@ public final class EmployeeAccount {
 
   /** 创建启用的员工账号，初始安全版本与业务版本均为零. */
   public static EmployeeAccount create(
-      long id, EmployeeProfile profile, String hash, Role role, Instant now) {
+      UUID id, EmployeeProfile profile, String hash, Role role, Instant now) {
     return new EmployeeAccount(id, profile, hash, role, true, 0, 0, now, now);
   }
 
   /** 从持久化快照重建聚合，同时验证不可破坏的基础状态约束. */
   public static EmployeeAccount restore(
-      long id,
+      UUID id,
       EmployeeProfile profile,
       String hash,
       Role role,
@@ -106,15 +107,15 @@ public final class EmployeeAccount {
     }
   }
 
-  /** 检查客户端提供的版本；旧客户端未提供版本时仍由仓储执行写入并发检查. */
-  public void requireVersion(Long expected) {
-    if (expected != null && expected != version) {
-      throw new IdentityException(IdentityException.Reason.CONFLICT, "资料已被修改，请刷新后重试");
+  /** 验证调用者持有的版本，禁止陈旧状态覆盖已提交的业务修改. */
+  public void requireVersion(long expected) {
+    if (expected != version) {
+      throw new IdentityException(IdentityException.Reason.VERSION_CONFLICT, "资料已被修改，请刷新后重试");
     }
   }
 
   /** 返回账号标识. */
-  public long id() {
+  public UUID id() {
     return id;
   }
 

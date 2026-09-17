@@ -1,6 +1,8 @@
 package com.hanserwei.hanmenu.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -11,6 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.hanserwei.hanmenu.identity.application.EmployeeAdministration;
 import com.hanserwei.hanmenu.identity.application.TokenFactory;
+import com.hanserwei.hanmenu.identity.domain.EmployeeProfile;
+import com.hanserwei.hanmenu.identity.domain.EmployeeRepository;
 import com.hanserwei.hanmenu.identity.domain.NewPassword;
 import com.hanserwei.hanmenu.support.TestDatabase;
 import jakarta.servlet.http.Cookie;
@@ -19,6 +23,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +36,7 @@ import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.test.ApplicationModuleTest;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -40,10 +46,11 @@ import org.springframework.test.context.TestExecutionListeners.MergeMode;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-/** 在真实 PostgreSQL、Redis 和完整安全链上验证身份模块及旧客户端契约. */
+/** 在真实 PostgreSQL、Redis 与 JPA 事务中验证全新 HTTP 契约及认证权限边界. */
 @ApplicationModuleTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -62,18 +69,19 @@ class IdentityModuleIt {
   private static final String ADMIN_PASSWORD = "P1-Admin-password-2026";
   private static final String STAFF_PASSWORD = "P1-Staff-password-2026";
   private static final String NEW_PASSWORD = "Replaced-Password-2026";
-
   @Autowired private MockMvc mvc;
   @Autowired private JsonMapper json;
   @Autowired private JdbcClient jdbc;
   @Autowired private StringRedisTemplate redis;
   @Autowired private EmployeeAdministration administration;
+  @Autowired private EmployeeRepository employees;
   @Autowired private TokenFactory tokens;
 
   @Value("${han-menu.identity.redis-key-prefix}")
   private String redisPrefix;
 
   private String adminToken;
+  private UUID adminId;
 
   @DynamicPropertySource
   static void databaseProperties(DynamicPropertyRegistry registry) {
@@ -81,222 +89,194 @@ class IdentityModuleIt {
   }
 
   @BeforeEach
-  void prepareIsolatedFixtures() throws Exception {
-    jdbc.sql(
-            "TRUNCATE identity_session, identity_audit, identity_employee RESTART IDENTITY CASCADE")
-        .update();
+  void fixtures() throws Exception {
+    jdbc.sql("TRUNCATE identity_session, identity_audit, identity_employee CASCADE").update();
     clearRateLimits();
     administration.bootstrap("admin", new NewPassword(ADMIN_PASSWORD));
+    adminId = employees.findByUsername("admin").orElseThrow().id();
     adminToken = login("admin", ADMIN_PASSWORD);
   }
 
   @Test
-  void keepsLegacyContractAndStoresOnlyPasswordAndTokenHashes() throws Exception {
+  void createsResourceBasedSessionsAndStoresOnlyHashes() throws Exception {
     var me =
-        mvc.perform(get("/admin/employee/me").header("token", adminToken))
+        mvc.perform(get("/api/v1/me").header("Authorization", bearer(adminToken)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.code").value(1))
-            .andExpect(jsonPath("$.data.role").value("ADMIN"))
+            .andExpect(jsonPath("$.role").value("ADMIN"))
+            .andExpect(jsonPath("$.data").doesNotExist())
             .andExpect(header().exists("X-Request-ID"))
             .andReturn();
-    assertThat(body(me).path("data").path("id").asLong()).isEqualTo(1);
-    String stored =
-        jdbc.sql("SELECT password_hash FROM identity_employee WHERE id = 1")
-            .query(String.class)
-            .single();
-    assertThat(stored).startsWith("$2a$12$").doesNotContain(ADMIN_PASSWORD);
-    assertThat(jdbc.sql("SELECT token_hash FROM identity_session").query(String.class).single())
-        .isEqualTo(tokens.digest(adminToken))
-        .isNotEqualTo(adminToken);
-    mvc.perform(get("/admin/employee/page").header("token", adminToken))
-        .andExpect(jsonPath("$.data.total").value(1))
-        .andExpect(jsonPath("$.data.records[0].password").doesNotExist())
-        .andExpect(jsonPath("$.data.records[0].passwordHash").doesNotExist())
-        .andExpect(jsonPath("$.data.records[0].createTime").isString());
-  }
-
-  @Test
-  void staffCannotEscalateRolesOrManageOtherEmployees() throws Exception {
-    long id = createStaff("staff", "普通员工");
-    String token = login("staff", STAFF_PASSWORD);
-    mvc.perform(get("/admin/employee/me").header("Authorization", "Bearer " + token))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.role").value("STAFF"));
-    mvc.perform(get("/admin/employee/page").header("token", token))
-        .andExpect(status().isForbidden());
-    mvc.perform(get("/admin/employee/1").header("token", token)).andExpect(status().isForbidden());
-    mvc.perform(get("/admin/employee/status/0").param("id", "1").header("token", token))
-        .andExpect(status().isForbidden());
-    mvc.perform(
-            put("/admin/employee")
-                .header("token", token)
-                .contentType("application/json")
-                .content(
-                    json.writeValueAsString(Map.of("id", id, "username", "staff", "name", "越权"))))
-        .andExpect(status().isForbidden());
+    assertThat(UUID.fromString(body(me).path("id").asString())).isEqualTo(adminId);
     assertThat(
-            jdbc.sql("SELECT role FROM identity_employee WHERE id = ?")
-                .param(id)
+            jdbc.sql("SELECT password_hash FROM identity_employee WHERE id = ?")
+                .param(adminId)
                 .query(String.class)
                 .single())
-        .isEqualTo("STAFF");
+        .startsWith("$2a$12$")
+        .doesNotContain(ADMIN_PASSWORD);
+    assertThat(jdbc.sql("SELECT token_hash FROM identity_session").query(String.class).single())
+        .isEqualTo(tokens.digest(adminToken));
+    mvc.perform(get("/api/v1/employees").header("Authorization", bearer(adminToken)))
+        .andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.items[0].passwordHash").doesNotExist());
   }
 
   @Test
-  void logoutRevokesOnlyTheCurrentToken() throws Exception {
-    String another = login("admin", ADMIN_PASSWORD);
-    mvc.perform(post("/admin/employee/logout").header("token", adminToken))
+  void enforcesRolesAndRejectsUndeclaredPrivilegeFields() throws Exception {
+    createStaff("staff", "普通员工");
+    String token = login("staff", STAFF_PASSWORD);
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(token)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(1));
-    mvc.perform(get("/admin/employee/me").header("token", adminToken))
-        .andExpect(status().isUnauthorized());
-    mvc.perform(get("/admin/employee/me").header("token", another)).andExpect(status().isOk());
+        .andExpect(jsonPath("$.role").value("STAFF"));
+    mvc.perform(get("/api/v1/employees").header("Authorization", bearer(token)))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.status").value(403));
+    mvc.perform(get("/api/v1/employees/{id}", adminId).header("Authorization", bearer(token)))
+        .andExpect(status().isForbidden());
+    mvc.perform(
+            post("/api/v1/employees")
+                .header("Authorization", bearer(adminToken))
+                .contentType("application/json")
+                .content(
+                    json.writeValueAsString(
+                        Map.of(
+                            "username",
+                            "injected",
+                            "displayName",
+                            "非法角色",
+                            "password",
+                            STAFF_PASSWORD,
+                            "role",
+                            "ADMIN"))))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
   }
 
   @Test
-  void disablingAndReenablingCannotReviveOldSessions() throws Exception {
-    long id = createStaff("staff", "普通员工");
-    String staff = login("staff", STAFF_PASSWORD);
-    mvc.perform(
-            patch("/admin/employee/{id}/status", id)
-                .header("token", adminToken)
-                .contentType("application/json")
-                .content("{\"status\":0,\"version\":0}"))
+  void deletingCurrentSessionDoesNotDeleteOtherSessions() throws Exception {
+    String another = login("admin", ADMIN_PASSWORD);
+    mvc.perform(delete("/api/v1/sessions/current").header("Authorization", bearer(adminToken)))
+        .andExpect(status().isNoContent());
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(adminToken)))
+        .andExpect(status().isUnauthorized());
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(another)))
         .andExpect(status().isOk());
-    mvc.perform(get("/admin/employee/me").header("token", staff))
+  }
+
+  @Test
+  void reenablingDoesNotReviveOldSessions() throws Exception {
+    UUID id = createStaff("staff", "普通员工");
+    String token = login("staff", STAFF_PASSWORD);
+    changeStatus(id, "DISABLED", 0).andExpect(status().isNoContent());
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(token)))
         .andExpect(status().isUnauthorized());
     loginRequest("staff", STAFF_PASSWORD)
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.msg").value("用户名或密码错误"));
-    mvc.perform(
-            get("/admin/employee/status/1")
-                .param("id", Long.toString(id))
-                .header("token", adminToken))
-        .andExpect(status().isOk())
-        .andExpect(header().string("Deprecation", "true"));
-    mvc.perform(get("/admin/employee/me").header("token", staff))
+        .andExpect(jsonPath("$.detail").value("用户名或密码错误"));
+    changeStatus(id, "ACTIVE", 1).andExpect(status().isNoContent());
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(token)))
         .andExpect(status().isUnauthorized());
-    mvc.perform(get("/admin/employee/me").header("token", login("staff", STAFF_PASSWORD)))
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(login("staff", STAFF_PASSWORD))))
         .andExpect(status().isOk());
-    mvc.perform(get("/admin/employee/status/0").param("id", "1").header("token", adminToken))
-        .andExpect(status().isConflict());
+    changeStatus(adminId, "DISABLED", 0).andExpect(status().isConflict());
   }
 
   @Test
-  void changingPasswordRequiresOldPasswordAndRevokesAllSessions() throws Exception {
+  void changingPasswordRequiresCurrentPasswordAndRevokesAllSessions() throws Exception {
     createStaff("staff", "普通员工");
     String first = login("staff", STAFF_PASSWORD);
     String second = login("staff", STAFF_PASSWORD);
-    mvc.perform(
-            put("/admin/employee/password")
-                .header("token", first)
-                .contentType("application/json")
-                .content(
-                    json.writeValueAsString(
-                        Map.of("oldPassword", "wrong", "newPassword", NEW_PASSWORD))))
+    password(first, "wrong", NEW_PASSWORD).andExpect(status().isUnauthorized());
+    password(first, STAFF_PASSWORD, NEW_PASSWORD).andExpect(status().isNoContent());
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(first)))
         .andExpect(status().isUnauthorized());
-    mvc.perform(
-            put("/admin/employee/password")
-                .header("token", first)
-                .contentType("application/json")
-                .content(
-                    json.writeValueAsString(
-                        Map.of("oldPassword", STAFF_PASSWORD, "newPassword", NEW_PASSWORD))))
-        .andExpect(status().isOk());
-    mvc.perform(get("/admin/employee/me").header("token", first))
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(second)))
         .andExpect(status().isUnauthorized());
-    mvc.perform(get("/admin/employee/me").header("token", second))
-        .andExpect(status().isUnauthorized());
-    mvc.perform(get("/admin/employee/me").header("token", login("staff", NEW_PASSWORD)))
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(login("staff", NEW_PASSWORD))))
         .andExpect(status().isOk());
   }
 
   @Test
-  void rejectsMissingExpiredForgedAmbiguousAndCookieOnlyCredentials() throws Exception {
-    mvc.perform(get("/admin/employee/page"))
-        .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.code").value(0));
-    mvc.perform(get("/admin/employee/me").cookie(new Cookie("token", adminToken)))
+  void rejectsExpiredForgedCookieAndOldHeaderAuthentication() throws Exception {
+    mvc.perform(get("/api/v1/me").cookie(new Cookie("token", adminToken)))
         .andExpect(status().isUnauthorized());
-    mvc.perform(get("/admin/employee/me").header("token", "hme_" + "a".repeat(43)))
+    mvc.perform(get("/api/v1/me").header("token", adminToken)).andExpect(status().isUnauthorized());
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer("hme_" + "x".repeat(43))))
         .andExpect(status().isUnauthorized());
-    mvc.perform(
-            get("/admin/employee/me")
-                .header("token", adminToken)
-                .header("Authorization", "Bearer " + adminToken))
-        .andExpect(status().isBadRequest());
-    mvc.perform(get("/admin/employee/me").header("token", adminToken, adminToken))
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(adminToken), bearer(adminToken)))
         .andExpect(status().isBadRequest());
     jdbc.sql("UPDATE identity_session SET expires_at = ?")
         .param(Timestamp.from(Instant.now().minusSeconds(1)))
         .update();
-    mvc.perform(get("/admin/employee/me").header("token", adminToken))
+    mvc.perform(get("/api/v1/me").header("Authorization", bearer(adminToken)))
         .andExpect(status().isUnauthorized());
   }
 
   @Test
-  void supportsEditingPaginationAndConflictsWithoutMassAssignment() throws Exception {
-    long id = createStaff("staff", "百分比%员工");
+  void supportsStablePaginationAndMandatoryVersionedUpdates() throws Exception {
+    UUID id = createStaff("staff", "百分比%员工");
     mvc.perform(
-            get("/admin/employee/page")
-                .header("token", adminToken)
-                .param("page", "1")
-                .param("pageSize", "1")
+            get("/api/v1/employees")
+                .header("Authorization", bearer(adminToken))
+                .param("page", "0")
+                .param("size", "1")
                 .param("name", "%"))
-        .andExpect(jsonPath("$.data.total").value(1))
-        .andExpect(jsonPath("$.data.records[0].id").value(id));
+        .andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.totalPages").value(1))
+        .andExpect(jsonPath("$.items[0].id").value(id.toString()));
     String update =
-        json.writeValueAsString(
-            Map.of(
-                "id",
-                id,
-                "username",
-                "staff",
-                "name",
-                "修改后的员工",
-                "version",
-                0,
-                "role",
-                "ADMIN",
-                "status",
-                0));
+        json.writeValueAsString(Map.of("username", "staff", "displayName", "新姓名", "version", 0));
     mvc.perform(
-            put("/admin/employee")
-                .header("token", adminToken)
+            put("/api/v1/employees/{id}", id)
+                .header("Authorization", bearer(adminToken))
                 .contentType("application/json")
                 .content(update))
-        .andExpect(status().isOk());
+        .andExpect(status().isNoContent());
     mvc.perform(
-            put("/admin/employee")
-                .header("token", adminToken)
+            put("/api/v1/employees/{id}", id)
+                .header("Authorization", bearer(adminToken))
                 .contentType("application/json")
                 .content(update))
-        .andExpect(status().isConflict());
-    mvc.perform(get("/admin/employee/{id}", id).header("token", adminToken))
-        .andExpect(jsonPath("$.data.role").value("STAFF"))
-        .andExpect(jsonPath("$.data.status").value(1));
-    mvc.perform(get("/admin/employee/99999").header("token", adminToken))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("VERSION_CONFLICT"));
+    mvc.perform(
+            put("/api/v1/employees/{id}", id)
+                .header("Authorization", bearer(adminToken))
+                .contentType("application/json")
+                .content("{\"username\":\"staff\",\"displayName\":\"未带版本\"}"))
+        .andExpect(status().isBadRequest());
+    mvc.perform(
+            get("/api/v1/employees/{id}", UUID.randomUUID())
+                .header("Authorization", bearer(adminToken)))
         .andExpect(status().isNotFound());
-    mvc.perform(get("/admin/employee/page").header("token", adminToken).param("pageSize", "101"))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.code").value(0));
     mvc.perform(
-            post("/admin/employee")
-                .header("token", adminToken)
-                .contentType("application/json")
-                .content(json.writeValueAsString(Map.of("username", "STAFF", "name", "重复员工"))))
-        .andExpect(status().isConflict());
+            get("/api/v1/employees")
+                .header("Authorization", bearer(adminToken))
+                .param("size", "101"))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
-  void enforcesAtomicRedisQuotaWithExpiryAndIgnoresSpoofedForwardedAddresses() throws Exception {
-    for (int attempt = 0; attempt < 4; attempt++) {
+  void ormRepositoryRejectsStaleAggregateUpdates() throws Exception {
+    UUID id = createStaff("staff", "原始姓名");
+    var first = employees.findById(id).orElseThrow();
+    var stale = employees.findById(id).orElseThrow();
+    first.reviseProfile(new EmployeeProfile("staff", "第一位编辑者", ""), Instant.now());
+    employees.update(first);
+    stale.reviseProfile(new EmployeeProfile("staff", "陈旧编辑者", ""), Instant.now());
+    assertThatThrownBy(() -> employees.update(stale))
+        .isInstanceOf(ObjectOptimisticLockingFailureException.class);
+    assertThat(employees.findById(id).orElseThrow().profile().displayName()).isEqualTo("第一位编辑者");
+  }
+
+  @Test
+  void redisLimitsHaveExpiryAndCannotTrustForwardedHeaders() throws Exception {
+    for (int index = 0; index < 4; index++) {
       mvc.perform(
-              post("/admin/employee/login")
-                  .header("X-Forwarded-For", "192.0.2." + attempt)
+              post("/api/v1/sessions")
+                  .header("X-Forwarded-For", "192.0.2." + index)
                   .contentType("application/json")
-                  .content(
-                      json.writeValueAsString(Map.of("username", "unknown", "password", "wrong"))))
+                  .content(credentials("unknown", "wrong")))
           .andExpect(status().isUnauthorized());
     }
     loginRequest("unknown", "wrong")
@@ -307,58 +287,27 @@ class IdentityModuleIt {
       assertThat(key).doesNotContain("unknown", "127.0.0.1");
       assertThat(redis.getExpire(key)).isBetween(1L, 60L);
     }
-    clearRateLimits();
-    loginRequest("unknown", "wrong").andExpect(status().isUnauthorized());
-  }
-
-  @Test
-  void databaseFailureDoesNotBypassAuthentication() throws Exception {
-    jdbc.sql("ALTER TABLE identity_session RENAME TO unavailable_session").update();
-    try {
-      mvc.perform(get("/admin/employee/me").header("token", adminToken))
-          .andExpect(status().isServiceUnavailable())
-          .andExpect(jsonPath("$.msg").value("认证服务暂不可用"));
-    } finally {
-      jdbc.sql("ALTER TABLE unavailable_session RENAME TO identity_session").update();
-    }
   }
 
   @Test
   void rotatingUsernamesCannotBypassIpQuota() throws Exception {
     clearRateLimits();
-    for (int attempt = 0; attempt < 10; attempt++) {
-      loginRequest("unknown_" + attempt, "wrong").andExpect(status().isUnauthorized());
+    for (int index = 0; index < 10; index++) {
+      loginRequest("unknown_" + index, "wrong").andExpect(status().isUnauthorized());
     }
     loginRequest("another_unknown", "wrong").andExpect(status().isTooManyRequests());
   }
 
   @Test
-  void staleHeaderDoesNotPreventLoggingInAgain() throws Exception {
-    mvc.perform(
-            post("/admin/employee/login")
-                .header("token", "hme_" + "z".repeat(43))
-                .contentType("application/json")
-                .content(
-                    json.writeValueAsString(
-                        Map.of("username", "admin", "password", ADMIN_PASSWORD))))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(1));
-  }
-
-  @Test
-  void validationAndFrameworkErrorsKeepLegacyEnvelopeWithoutRejectedValues(CapturedOutput output)
-      throws Exception {
-    String rejectedPassword = "private-rejected-value-" + "x".repeat(130);
-    var result =
-        loginRequest("admin", rejectedPassword)
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.code").value(0))
-            .andReturn();
-    assertThat(result.getResponse().getContentAsString()).doesNotContain(rejectedPassword);
-    mvc.perform(put("/admin/employee/login").header("token", adminToken))
-        .andExpect(status().isMethodNotAllowed())
-        .andExpect(jsonPath("$.code").value(0));
-    assertThat(output.getAll()).doesNotContain(rejectedPassword);
+  void databaseFailureCannotBypassAuthentication() throws Exception {
+    jdbc.sql("ALTER TABLE identity_session RENAME TO unavailable_session").update();
+    try {
+      mvc.perform(get("/api/v1/me").header("Authorization", bearer(adminToken)))
+          .andExpect(status().isServiceUnavailable())
+          .andExpect(jsonPath("$.code").value("UNAVAILABLE"));
+    } finally {
+      jdbc.sql("ALTER TABLE unavailable_session RENAME TO identity_session").update();
+    }
   }
 
   @Test
@@ -373,7 +322,7 @@ class IdentityModuleIt {
                 .query(String.class)
                 .list());
     assertThat(audit)
-        .contains("LOGIN", "FAILURE", "CREATE_EMPLOYEE")
+        .contains("LOGIN", "false", "CREATE_EMPLOYEE")
         .doesNotContain(
             ADMIN_PASSWORD, STAFF_PASSWORD, adminToken, token, "不应进入日志的姓名", "13800138000");
     assertThat(output.getAll())
@@ -383,97 +332,158 @@ class IdentityModuleIt {
   }
 
   @Test
-  void publishesApiDocumentationAndDeniesUnimplementedBusinessRoutes() throws Exception {
-    var document = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
-    assertThat(body(document).path("paths").has("/admin/employee/login")).isTrue();
-    assertThat(body(document).path("components").path("securitySchemes").has("employeeToken"))
-        .isTrue();
-    mvc.perform(get("/user/order/historyOrders").header("token", adminToken))
-        .andExpect(status().isForbidden())
-        .andExpect(jsonPath("$.status").value(403));
+  void publishesOnlyModernApiAndUsesProblemDetails() throws Exception {
+    var result = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
+    var paths = body(result).path("paths");
+    assertThat(paths.has("/api/v1/sessions")).isTrue();
+    assertThat(paths.has("/admin/employee/login")).isFalse();
+    assertThat(body(result).path("components").path("securitySchemes").has("employeeToken"))
+        .isFalse();
+    var denied =
+        mvc.perform(get("/api/v1/me"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(
+                header()
+                    .string(
+                        "Content-Type",
+                        org.hamcrest.Matchers.startsWith("application/problem+json")))
+            .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"))
+            .andReturn();
+    assertThat(body(denied).path("traceId").asString())
+        .isEqualTo(denied.getResponse().getHeader("X-Request-ID"));
+    assertThat(body(denied).path("instance").asString()).isEqualTo("/api/v1/me");
   }
 
   @Test
-  void bootstrapDoesNotResetCredentialsOrCreateAnotherAdministrator() throws Exception {
-    String original =
-        jdbc.sql("SELECT password_hash FROM identity_employee WHERE id = 1")
-            .query(String.class)
-            .single();
+  void bootstrapDoesNotResetExistingNewApplicationCredentials() {
+    String original = employees.findById(adminId).orElseThrow().passwordHash();
     administration.bootstrap("another_admin", new NewPassword(NEW_PASSWORD));
     assertThat(jdbc.sql("SELECT count(*) FROM identity_employee").query(Long.class).single())
         .isEqualTo(1);
-    assertThat(
-            jdbc.sql("SELECT password_hash FROM identity_employee WHERE id = 1")
-                .query(String.class)
-                .single())
-        .isEqualTo(original);
-    login("admin", ADMIN_PASSWORD);
+    assertThat(employees.findById(adminId).orElseThrow().passwordHash()).isEqualTo(original);
   }
 
   @Test
-  void generatesUniqueInitialPasswordsWithoutLegacyDefault() throws Exception {
-    var result =
-        mvc.perform(
-                post("/admin/employee")
-                    .header("token", adminToken)
-                    .contentType("application/json")
-                    .content(
-                        json.writeValueAsString(Map.of("username", "generated", "name", "新员工"))))
-            .andExpect(status().isOk())
-            .andReturn();
-    String initial = body(result).path("data").path("initialPassword").asString();
-    assertThat(initial).hasSize(32);
-    login("generated", initial);
+  void validatesRequiredPasswordAndDoesNotEchoRejectedValues(CapturedOutput output)
+      throws Exception {
+    String rejected = "private-rejected-value-" + "x".repeat(130);
+    var result = loginRequest("admin", rejected).andExpect(status().isBadRequest()).andReturn();
+    assertThat(result.getResponse().getContentAsString()).doesNotContain(rejected);
+    mvc.perform(
+            post("/api/v1/employees")
+                .header("Authorization", bearer(adminToken))
+                .contentType("application/json")
+                .content("{\"username\":\"missing_password\",\"displayName\":\"员工\"}"))
+        .andExpect(status().isBadRequest());
+    assertThat(output.getAll()).doesNotContain(rejected);
   }
 
-  private long createStaff(String username, String name) throws Exception {
+  @Test
+  void duplicateAccountsReturnConflictWithoutLeakingDatabaseDetails(CapturedOutput output)
+      throws Exception {
+    String username = "private_duplicate_account";
+    createStaff(username, "私有姓名");
     var result =
         mvc.perform(
-                post("/admin/employee")
-                    .header("token", adminToken)
+                post("/api/v1/employees")
+                    .header("Authorization", bearer(adminToken))
                     .contentType("application/json")
                     .content(
                         json.writeValueAsString(
                             Map.of(
                                 "username",
                                 username,
-                                "name",
-                                name,
-                                "phone",
-                                "13800138000",
-                                "sex",
-                                "1",
-                                "idNumber",
-                                "110101199001010010",
+                                "displayName",
+                                "私有姓名",
                                 "password",
-                                STAFF_PASSWORD,
-                                "role",
-                                "ADMIN"))))
-            .andExpect(status().isOk())
+                                STAFF_PASSWORD))))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("DATA_CONFLICT"))
             .andReturn();
-    return body(result).path("data").path("id").asLong();
+    assertThat(result.getResponse().getContentAsString())
+        .doesNotContain(username, "INSERT", "password_hash");
+    assertThat(output.getAll()).doesNotContain(username, "私有姓名", STAFF_PASSWORD);
   }
 
-  private org.springframework.test.web.servlet.ResultActions loginRequest(
-      String username, String password) throws Exception {
+  @Test
+  void reauthenticationCanIgnoreAnExpiredBearerOnSessionCreation() throws Exception {
+    mvc.perform(
+            post("/api/v1/sessions")
+                .header("Authorization", bearer("hme_" + "z".repeat(43)))
+                .contentType("application/json")
+                .content(credentials("admin", ADMIN_PASSWORD)))
+        .andExpect(status().isCreated());
+  }
+
+  private UUID createStaff(String username, String displayName) throws Exception {
+    var result =
+        mvc.perform(
+                post("/api/v1/employees")
+                    .header("Authorization", bearer(adminToken))
+                    .contentType("application/json")
+                    .content(
+                        json.writeValueAsString(
+                            Map.of(
+                                "username",
+                                username,
+                                "displayName",
+                                displayName,
+                                "phone",
+                                "13800138000",
+                                "password",
+                                STAFF_PASSWORD))))
+            .andExpect(status().isCreated())
+            .andExpect(header().exists("Location"))
+            .andExpect(jsonPath("$.passwordHash").doesNotExist())
+            .andReturn();
+    return UUID.fromString(body(result).path("id").asString());
+  }
+
+  private ResultActions changeStatus(UUID id, String value, long version) throws Exception {
     return mvc.perform(
-        post("/admin/employee/login")
+        patch("/api/v1/employees/{id}/status", id)
+            .header("Authorization", bearer(adminToken))
             .contentType("application/json")
-            .content(json.writeValueAsString(Map.of("username", username, "password", password))));
+            .content(json.writeValueAsString(Map.of("status", value, "version", version))));
+  }
+
+  private ResultActions password(String token, String current, String replacement)
+      throws Exception {
+    return mvc.perform(
+        put("/api/v1/me/password")
+            .header("Authorization", bearer(token))
+            .contentType("application/json")
+            .content(
+                json.writeValueAsString(
+                    Map.of("currentPassword", current, "newPassword", replacement))));
+  }
+
+  private String credentials(String username, String password) throws Exception {
+    return json.writeValueAsString(Map.of("username", username, "password", password));
+  }
+
+  private ResultActions loginRequest(String username, String password) throws Exception {
+    return mvc.perform(
+        post("/api/v1/sessions")
+            .contentType("application/json")
+            .content(credentials(username, password)));
   }
 
   private String login(String username, String password) throws Exception {
     var result =
         loginRequest(username, password)
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.code").value(1))
-            .andExpect(jsonPath("$.data.userName").value(username))
-            .andExpect(
-                header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+            .andExpect(status().isCreated())
+            .andExpect(header().string("Location", "/api/v1/sessions/current"))
+            .andExpect(jsonPath("$.tokenType").value("Bearer"))
             .andReturn();
-    String token = body(result).path("data").path("token").asString();
+    String token = body(result).path("accessToken").asString();
     assertThat(token).matches("hme_[A-Za-z0-9_-]{43}");
+    assertThat(Instant.parse(body(result).path("expiresAt").asString())).isAfter(Instant.now());
     return token;
+  }
+
+  private String bearer(String token) {
+    return "Bearer " + token;
   }
 
   private JsonNode body(MvcResult result) throws Exception {
@@ -481,12 +491,12 @@ class IdentityModuleIt {
   }
 
   private List<String> rateKeys() {
-    var result = new ArrayList<String>();
+    var keys = new ArrayList<String>();
     try (var cursor =
         redis.scan(ScanOptions.scanOptions().match(redisPrefix + "*").count(100).build())) {
-      cursor.forEachRemaining(result::add);
+      cursor.forEachRemaining(keys::add);
     }
-    return result;
+    return keys;
   }
 
   private void clearRateLimits() {

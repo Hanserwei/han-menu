@@ -9,10 +9,10 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -25,7 +25,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /** 映射身份用例失败，禁止把校验异常的 rejectedValue 或底层 SQL 直接写入响应. */
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(100)
 @RestControllerAdvice
 class IdentityExceptionHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityExceptionHandler.class);
@@ -48,7 +48,7 @@ class IdentityExceptionHandler {
           case INVALID_CREDENTIALS -> 401;
           case FORBIDDEN -> 403;
           case NOT_FOUND -> 404;
-          case CONFLICT -> 409;
+          case CONFLICT, VERSION_CONFLICT -> 409;
           case INVALID_INPUT -> 400;
           case RATE_LIMITED -> 429;
           case UNAVAILABLE -> 503;
@@ -56,7 +56,7 @@ class IdentityExceptionHandler {
     if (status == 429) {
       response.setHeader("Retry-After", Long.toString(loginWindow.toSeconds()));
     }
-    responses.write(request, response, status, exception.getMessage());
+    responses.write(request, response, status, exception.reason().name(), exception.getMessage());
   }
 
   @ExceptionHandler({
@@ -73,13 +73,22 @@ class IdentityExceptionHandler {
     responses.write(request, response, 400, "请求参数不合法");
   }
 
-  @ExceptionHandler(DuplicateKeyException.class)
+  @ExceptionHandler(DataIntegrityViolationException.class)
   void duplicate(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    responses.write(request, response, 409, "用户名已存在");
+    responses.write(request, response, 409, "DATA_CONFLICT", "资源冲突，请检查用户名是否重复");
+  }
+
+  @ExceptionHandler(OptimisticLockingFailureException.class)
+  void optimisticConflict(HttpServletRequest request, HttpServletResponse response)
+      throws IOException {
+    responses.write(request, response, 409, "VERSION_CONFLICT", "资源已被修改，请刷新后重试");
   }
 
   @ExceptionHandler(DataAccessException.class)
-  void unavailable(HttpServletRequest request, HttpServletResponse response) throws IOException {
+  void unavailable(
+      DataAccessException exception, HttpServletRequest request, HttpServletResponse response)
+      throws IOException {
+    LOGGER.warn("dependency_failure exceptionType={}", exception.getClass().getSimpleName());
     responses.write(request, response, 503, "服务暂不可用，请稍后重试");
   }
 
@@ -90,7 +99,7 @@ class IdentityExceptionHandler {
 
   @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
   void mediaType(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    responses.write(request, response, 415, "请使用 application/json 请求内容");
+    responses.write(request, response, 415, "请求内容类型不受支持");
   }
 
   @ExceptionHandler(Exception.class)

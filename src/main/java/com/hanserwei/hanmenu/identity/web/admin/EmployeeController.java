@@ -1,32 +1,26 @@
 package com.hanserwei.hanmenu.identity.web.admin;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hanserwei.hanmenu.identity.api.StaffIdentity;
 import com.hanserwei.hanmenu.identity.application.EmployeeAdministration;
-import com.hanserwei.hanmenu.identity.application.EmployeeAuthentication;
 import com.hanserwei.hanmenu.identity.domain.EmployeeAccount;
 import com.hanserwei.hanmenu.identity.domain.EmployeeProfile;
 import com.hanserwei.hanmenu.identity.domain.NewPassword;
-import com.hanserwei.hanmenu.identity.web.LegacyResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import java.net.URI;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
+import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.core.Authentication;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -38,160 +32,85 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 兼容旧后台的员工 HTTP 适配器，显式选择响应字段，绝不返回密码摘要. */
+/** 员工资源适配器，只暴露 DTO；成功状态遵循 HTTP，修改请求必须携带聚合版本. */
 @RestController
-@RequestMapping("/admin/employee")
-@Tag(name = "员工与身份", description = "旧后台契约及新增安全能力")
+@RequestMapping("/api/v1/employees")
+@Tag(name = "员工资源", description = "仅管理员可以维护员工账号")
 class EmployeeController {
-  private final EmployeeAuthentication authentication;
   private final EmployeeAdministration administration;
 
-  EmployeeController(EmployeeAuthentication authentication, EmployeeAdministration administration) {
-    this.authentication = authentication;
+  EmployeeController(EmployeeAdministration administration) {
     this.administration = administration;
   }
 
-  @PostMapping("/login")
-  @Operation(summary = "员工登录", description = "令牌有效八小时；使用 token 或 Bearer 请求头二选一")
-  @SecurityRequirements
-  LegacyResponse<LoginView> login(
-      @Valid @RequestBody LoginRequest body, HttpServletRequest request) {
-    var result = authentication.login(body.username(), body.password(), request.getRemoteAddr());
-    var identity = result.identity();
-    return LegacyResponse.success(
-        new LoginView(
-            identity.employeeId(),
-            identity.username(),
-            identity.name(),
-            result.token(),
-            identity.role(),
-            result.expiresAt()));
-  }
-
-  @PostMapping("/logout")
-  @Operation(summary = "退出当前会话", description = "即时撤销当前令牌，不影响其他有效会话")
-  LegacyResponse<Void> logout(
-      @AuthenticationPrincipal StaffIdentity identity, Authentication session) {
-    authentication.logout(identity, (String) session.getDetails());
-    return LegacyResponse.success(null);
-  }
-
-  @GetMapping("/me")
-  @Operation(summary = "查询自己的身份", description = "管理员和普通员工均可调用")
-  LegacyResponse<CurrentEmployee> me(@AuthenticationPrincipal StaffIdentity identity) {
-    return LegacyResponse.success(
-        new CurrentEmployee(
-            identity.employeeId(), identity.username(), identity.name(), identity.role()));
-  }
-
   @PostMapping
-  @Operation(summary = "创建普通员工", description = "仅管理员；未传密码时在响应中一次性返回随机初始密码")
-  LegacyResponse<EmployeeAdministration.CreatedEmployee> create(
-      @AuthenticationPrincipal StaffIdentity identity, @Valid @RequestBody CreateEmployee body) {
-    return LegacyResponse.success(
+  @ApiResponse(responseCode = "201", description = "资源创建成功")
+  @Operation(summary = "创建员工", description = "初始密码必须提供；角色由服务端固定为 STAFF")
+  ResponseEntity<EmployeeView> create(
+      @AuthenticationPrincipal StaffIdentity actor, @Valid @RequestBody CreateEmployee body) {
+    var employee =
         administration.create(
-            identity,
-            new EmployeeProfile(
-                body.username(), body.name(), body.phone(), body.sex(), body.idNumber()),
-            body.password()));
+            actor,
+            new EmployeeProfile(body.username(), body.displayName(), body.phone()),
+            new NewPassword(body.password()));
+    return ResponseEntity.created(URI.create("/api/v1/employees/" + employee.id()))
+        .body(EmployeeView.from(employee));
   }
 
-  @GetMapping("/page")
-  @Operation(summary = "员工分页查询", description = "仅管理员；page 从 1 开始，pageSize 为 1 至 100")
-  LegacyResponse<EmployeePage> page(
-      @AuthenticationPrincipal StaffIdentity identity,
-      @RequestParam(defaultValue = "1") @Min(1) @Max(10000) int page,
-      @RequestParam(defaultValue = "10") @Min(1) @Max(100) int pageSize,
+  @GetMapping
+  @Operation(summary = "查询员工列表", description = "page 从 0 开始；size 默认 20，最大 100")
+  EmployeePageView search(
+      @AuthenticationPrincipal StaffIdentity actor,
+      @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int page,
+      @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
       @RequestParam(required = false) @Size(max = 50) String name) {
-    var result = administration.page(identity, StringUtils.stripToEmpty(name), page, pageSize);
-    return LegacyResponse.success(
-        new EmployeePage(
-            result.total(), result.records().stream().map(EmployeeView::from).toList()));
+    var result = administration.search(actor, StringUtils.stripToEmpty(name), page, size);
+    return new EmployeePageView(
+        result.items().stream().map(EmployeeView::from).toList(),
+        page,
+        size,
+        result.totalElements(),
+        Math.ceilDiv(result.totalElements(), size));
   }
 
   @GetMapping("/{id}")
-  @Operation(summary = "查询员工资料", description = "仅管理员；响应不含密码或密码摘要")
-  LegacyResponse<EmployeeView> get(
-      @AuthenticationPrincipal StaffIdentity identity, @PathVariable @Positive long id) {
-    return LegacyResponse.success(EmployeeView.from(administration.get(identity, id)));
+  @Operation(summary = "读取员工资源")
+  EmployeeView get(@AuthenticationPrincipal StaffIdentity actor, @PathVariable UUID id) {
+    return EmployeeView.from(administration.get(actor, id));
   }
 
-  @PutMapping
-  @Operation(summary = "更新员工资料", description = "仅管理员；不支持通过资料请求变更角色、状态或密码")
-  LegacyResponse<Void> update(
-      @AuthenticationPrincipal StaffIdentity identity, @Valid @RequestBody UpdateEmployee body) {
+  @PutMapping("/{id}")
+  @ApiResponse(responseCode = "204", description = "资料更新成功")
+  @Operation(summary = "更新员工资料", description = "必须提供当前 version；不会修改角色、状态或密码")
+  ResponseEntity<Void> update(
+      @AuthenticationPrincipal StaffIdentity actor,
+      @PathVariable UUID id,
+      @Valid @RequestBody UpdateEmployee body) {
     administration.revise(
-        identity,
-        body.id(),
-        new EmployeeProfile(
-            body.username(), body.name(), body.phone(), body.sex(), body.idNumber()),
+        actor,
+        id,
+        new EmployeeProfile(body.username(), body.displayName(), body.phone()),
         body.version());
-    return LegacyResponse.success(null);
-  }
-
-  @GetMapping("/status/{status}")
-  @Operation(
-      summary = "兼容旧后台的启停用",
-      deprecated = true,
-      description = "仅管理员；旧 GET 写操作仅作为兼容入口，推荐迁移至 PATCH")
-  LegacyResponse<Void> legacyStatus(
-      @AuthenticationPrincipal StaffIdentity identity,
-      @PathVariable @Min(0) @Max(1) int status,
-      @RequestParam @Positive long id,
-      HttpServletResponse response) {
-    response.setHeader("Deprecation", "true");
-    response.setHeader("Cache-Control", "no-store");
-    administration.changeStatus(identity, id, status == 1, null);
-    return LegacyResponse.success(null);
+    return ResponseEntity.noContent().build();
   }
 
   @PatchMapping("/{id}/status")
-  @Operation(summary = "启停用员工", description = "仅管理员；停用后旧令牌即时失效，重新启用不会恢复旧令牌")
-  LegacyResponse<Void> changeStatus(
-      @AuthenticationPrincipal StaffIdentity identity,
-      @PathVariable @Positive long id,
+  @ApiResponse(responseCode = "204", description = "状态更新成功")
+  @Operation(summary = "变更员工状态", description = "停用撤销旧会话；重新启用不会使旧会话复活")
+  ResponseEntity<Void> status(
+      @AuthenticationPrincipal StaffIdentity actor,
+      @PathVariable UUID id,
       @Valid @RequestBody StatusChange body) {
-    administration.changeStatus(identity, id, body.status() == 1, body.version());
-    return LegacyResponse.success(null);
+    administration.changeStatus(actor, id, body.status() == Status.ACTIVE, body.version());
+    return ResponseEntity.noContent().build();
   }
 
-  @PutMapping("/password")
-  @Operation(summary = "修改自己的密码", description = "要求旧密码；成功后全部旧令牌失效，需要重新登录")
-  LegacyResponse<Void> changePassword(
-      @AuthenticationPrincipal StaffIdentity identity, @Valid @RequestBody PasswordChange body) {
-    administration.changePassword(
-        identity, body.oldPassword(), new NewPassword(body.newPassword()));
-    return LegacyResponse.success(null);
-  }
-
-  /** 登录请求不允许默认字符串表示输出凭证. */
-  record LoginRequest(
-      @NotBlank @Size(min = 3, max = 32) String username,
-      @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) @NotBlank @Size(max = 128)
-          String password) {
-    @Override
-    public String toString() {
-      return "LoginRequest[凭证已隐藏]";
-    }
-  }
-
-  /** 保留 id、userName、name、token，新增字段不改变旧客户端读取方式. */
-  record LoginView(
-      long id, String userName, String name, String token, String role, Instant expiresAt) {
-    @Override
-    public String toString() {
-      return "LoginView[token=已隐藏]";
-    }
-  }
-
-  /** 创建请求的角色由服务端固定，密码未传时生成随机值；个人资料不进入默认日志. */
+  /** 创建账号的完整输入，密码只写不可读，不提供调试字符串中的敏感值. */
   record CreateEmployee(
       @NotBlank @Size(max = 32) String username,
-      @NotBlank @Size(max = 50) String name,
-      @Size(max = 11) String phone,
-      @Size(max = 1) String sex,
-      @Size(max = 18) String idNumber,
-      @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) @Size(min = 12, max = 64)
+      @NotBlank @Size(max = 50) String displayName,
+      @Size(max = 16) String phone,
+      @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) @NotBlank @Size(min = 12, max = 64)
           String password) {
     @Override
     public String toString() {
@@ -199,80 +118,59 @@ class EmployeeController {
     }
   }
 
-  /** 资料编辑不携带凭证与角色，版本可由支持并发编辑保护的新客户端提供. */
+  /** 资源标识来自路径；不接受角色、密码等不属于资料编辑的字段. */
   record UpdateEmployee(
-      @NotNull @Positive Long id,
       @NotBlank @Size(max = 32) String username,
-      @NotBlank @Size(max = 50) String name,
-      @Size(max = 11) String phone,
-      @Size(max = 1) String sex,
-      @Size(max = 18) String idNumber,
-      @Min(0) Long version) {
+      @NotBlank @Size(max = 50) String displayName,
+      @Size(max = 16) String phone,
+      @NotNull @Min(0) Long version) {
     @Override
     public String toString() {
       return "UpdateEmployee[资料已隐藏]";
     }
   }
 
-  /** 只允许状态 0 和 1，避免把未定义状态隐式转换为停用. */
-  record StatusChange(@NotNull @Min(0) @Max(1) Integer status, @Min(0) Long version) {}
+  /** 明确命名的状态替代魔法数字，版本号始终必填. */
+  record StatusChange(@NotNull Status status, @NotNull @Min(0) Long version) {}
 
-  /** 修改密码的输入不会通过字符串表示或 JSON 输出再次暴露. */
-  record PasswordChange(
-      @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) @NotBlank @Size(max = 128)
-          String oldPassword,
-      @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) @NotBlank @Size(min = 12, max = 64)
-          String newPassword) {
-    @Override
-    public String toString() {
-      return "PasswordChange[凭证已隐藏]";
-    }
+  /** HTTP 契约的账号状态，显式映射为领域行为的输入. */
+  enum Status {
+    ACTIVE,
+    DISABLED
   }
 
-  /** 分页信封保留旧 total 和 records 字段. */
-  record EmployeePage(long total, List<EmployeeView> records) {}
+  /** 稳定的分页协议，不序列化 Spring Data PageImpl 内部结构. */
+  record EmployeePageView(
+      List<EmployeeView> items, int page, int size, long totalElements, long totalPages) {}
 
-  /** 自己的身份视图不返回会话撤销版本或其他安全链内部字段. */
-  record CurrentEmployee(long id, String userName, String name, String role) {
-    @Override
-    public String toString() {
-      return "CurrentEmployee[id=" + id + "]";
-    }
-  }
-
-  /** 仅映射员工管理所需字段；时间按旧后台约定在上海时区显示至分钟. */
+  /** 资源响应使用 UUID 和 UTC 时间，不包含密码摘要或 ORM 代理. */
   record EmployeeView(
-      long id,
+      UUID id,
       String username,
-      String name,
+      String displayName,
       String phone,
-      String sex,
-      String idNumber,
-      int status,
       String role,
+      Status status,
       long version,
-      @JsonFormat(pattern = "yyyy-MM-dd HH:mm") LocalDateTime createTime,
-      @JsonFormat(pattern = "yyyy-MM-dd HH:mm") LocalDateTime updateTime) {
+      Instant createdAt,
+      Instant updatedAt) {
     static EmployeeView from(EmployeeAccount account) {
       var profile = account.profile();
-      var zone = ZoneId.of("Asia/Shanghai");
       return new EmployeeView(
           account.id(),
           profile.username(),
-          profile.name(),
+          profile.displayName(),
           profile.phone(),
-          profile.sex(),
-          profile.idNumber(),
-          account.enabled() ? 1 : 0,
           account.role().name(),
+          account.enabled() ? Status.ACTIVE : Status.DISABLED,
           account.version(),
-          LocalDateTime.ofInstant(account.createdAt(), zone),
-          LocalDateTime.ofInstant(account.updatedAt(), zone));
+          account.createdAt(),
+          account.updatedAt());
     }
 
     @Override
     public String toString() {
-      return "EmployeeView[id=" + id + ", 资料已隐藏]";
+      return "EmployeeView[id=" + id + "]";
     }
   }
 }
