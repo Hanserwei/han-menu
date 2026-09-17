@@ -1,10 +1,11 @@
 # Han Menu · 外卖系统
 
 以苍穹外卖的业务能力为参考，使用 Java 25、Spring Boot 4.1.1 和 Spring Modulith 2.1.1
-构建 DDD 模块化单体。当前交付的是**项目骨架和重构计划**，尚未实现业务接口。
+构建 DDD 模块化单体。已完成项目骨架及 **P1：身份认证、员工管理、权限边界与接口契约**。
 
 ## 先阅读
 
+- [P1 接口与使用说明](docs/P1_CONTRACT.md)：初始管理员、10 个员工接口、权限、会话和兼容约定。
 - [重构计划](docs/REFACTORING_PLAN.md)：源码分析、模块归属、面向对象建模、实施阶段和验收标准。
 - [原接口清单](docs/REFERENCE_API.md)：参考版本的 70 个 HTTP 处理方法、源码链接及前后端缺口。
 - [中间件准备清单](docs/INFRASTRUCTURE.md)：已有环境、后续需要的资源及接入信息。
@@ -24,19 +25,23 @@ python3 scripts/middleware.py up
 # 安装统一的用户级启动管理服务。
 python3 scripts/middleware.py install-service
 
-# 完整质量检查，包含真实 PostgreSQL 集成测试。
+# 完整质量检查，包含真实 PostgreSQL、Redis 集成测试。
 ./scripts/verify.sh
 
 # 启动应用，默认监听 127.0.0.1:8080。
 ./scripts/with-env.sh ./mvnw spring-boot:run
 ```
 
-`GET /actuator/health` 用于检查应用和数据库连接。Spring Boot 不自动读取 `.env`，IDE 启动时
+`GET /actuator/health` 用于检查应用、数据库和 Redis 连接。Spring Boot 不自动读取 `.env`，IDE 启动时
 需配置环境变量；命令行使用 `with-env.sh`。旧的 `setup-local-db.py` 命令保留为统一启动的兼容入口。
 
 本机 Redis 8.10.1 位于 `127.0.0.1:6379`，RustFS 1.0.0 的 S3 接口位于 `127.0.0.1:9000`，
 控制台为 [RustFS Console](http://127.0.0.1:9001/rustfs/console/)。凭证在 `.env` 中。
 执行 `python3 scripts/middleware.py verify` 可验证实际读写；启动、停止及持久化说明见中间件清单。
+
+初始管理员默认 `admin`，密码在 `.env` 的 `IDENTITY_BOOTSTRAP_PASSWORD` 中；首次启动自动创建，
+后续重启不重置密码。接口文档为 [Swagger UI](http://127.0.0.1:8080/swagger-ui/index.html)，
+机器可读契约为 [OpenAPI JSON](http://127.0.0.1:8080/v3/api-docs)。
 
 ## 代码布局
 
@@ -54,8 +59,8 @@ com.hanserwei.hanmenu
 └── reporting      工作台、统计和报表
 ```
 
-每个模块均有以下包说明文件；只有启动与测试基础设施存在实现类，没有占位控制器、示例业务对象
-或虚假的成功接口。业务边界是初始划分，后续用例分析可以调整。
+identity 已有实际领域聚合、用例、持久化和接口适配器；其他业务模块继续保留以下分层骨架。
+业务边界按真实用例逐步演化，没有占位成功接口。
 
 ```text
 模块/
@@ -78,10 +83,12 @@ com.hanserwei.hanmenu
 - Spring Modulith 模块边界检查、启动时验证和自动模块文档。
 - PostgreSQL 连接、Flyway 迁移、JDBC 事件登记基础设施。
 - Java 虚拟线程、Jackson 3、请求校验依赖、Problem Details 基础配置。
+- Spring Security、BCrypt、可撤销会话、员工权限、Redis 原子登录限流及脱敏审计。
+- springdoc-openapi 3.1.1 接口文档；Guava 33.7.1-jre、Commons Lang3 3.20.0 通用工具。
 - Google Java Format 1.36.1、Checkstyle 14.1.0 官方 Google 规则、Git 提交钩子及 CI。
 - 模块架构测试，以及使用隔离 PostgreSQL schema 的真实 HTTP 启动和迁移测试。
 
-认证、缓存、图片上传、具体领域对象和业务 API 均属于后续阶段，尚未接入。
+员工认证与管理已经实现；Redis 已用于登录限流，商品缓存、图片上传与其他业务属于后续阶段。
 事件表已准备好；尚无业务发布者和监听器，当前不能宣称已经具备订单或支付的可靠投递流程。
 
 ## 开发与提交
@@ -112,6 +119,7 @@ CI 配置已经入库，目前尚未运行远程 CI。
 上一版演示业务代码与业务测试已移除。V1、V2 已在开发库执行，因此保留历史迁移文件；V3 将原表
 重命名为 `legacy_demo_catalog_dish`、`legacy_demo_menu_entry`，保留任何已有数据。
 这些表不归属新业务模型，当前应用不访问它们。正式业务表随阶段实施新增迁移，不从示例模型演化。
+V4 创建身份模块的员工、会话和审计表，不导入参考项目的默认账号密码。
 
 集成测试使用名称以 `_test` 结尾的专用数据库，每个测试上下文创建随机 schema，关闭后清理。
 不使用 H2 替代 PostgreSQL，也不会在数据库不可用时跳过测试。

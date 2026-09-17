@@ -5,6 +5,8 @@ import java.sql.SQLException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
@@ -53,6 +55,7 @@ public final class TestDatabase implements AutoCloseable {
     registry.add("spring.datasource.password", () -> password);
     registry.add("spring.datasource.hikari.schema", () -> schema);
     registry.add("spring.flyway.default-schema", () -> schema);
+    registry.add("han-menu.identity.redis-key-prefix", () -> "han-menu:test:" + schema + ":login:");
   }
 
   /** 释放本实例创建的 schema；必须在 Spring 上下文完成关闭之后调用. */
@@ -85,6 +88,32 @@ public final class TestDatabase implements AutoCloseable {
       var database = DATABASES.remove(testContext.getTestClass());
       if (database != null) {
         database.close();
+      }
+    }
+  }
+
+  /** 在 Spring 关闭 Redis 连接之前，仅清理本测试上下文的限流键. */
+  public static final class RedisCleanup extends AbstractTestExecutionListener {
+    @Override
+    public int getOrder() {
+      return 3500;
+    }
+
+    @Override
+    public void afterTestClass(TestContext testContext) {
+      if (!testContext.hasApplicationContext()) {
+        return;
+      }
+      var context = testContext.getApplicationContext();
+      String prefix =
+          context.getEnvironment().getRequiredProperty("han-menu.identity.redis-key-prefix");
+      if (!prefix.startsWith("han-menu:test:")) {
+        throw new IllegalStateException("拒绝清理非测试 Redis 命名空间");
+      }
+      var redis = context.getBean(StringRedisTemplate.class);
+      try (var keys =
+          redis.scan(ScanOptions.scanOptions().match(prefix + "*").count(100).build())) {
+        keys.forEachRemaining(redis::delete);
       }
     }
   }

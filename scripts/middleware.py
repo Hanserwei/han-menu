@@ -36,6 +36,9 @@ class LocalConfiguration:
     def prepare(self):
         """首次生成本地凭证；后续运行保留原值，避免容器重建造成认证变化。"""
         defaults = {
+            "IDENTITY_BOOTSTRAP_USERNAME": "admin",
+            "IDENTITY_BOOTSTRAP_PASSWORD": secrets.token_urlsafe(24),
+            "IDENTITY_BOOTSTRAP_ENABLED": "true",
             "POSTGRES_PASSWORD": secrets.token_urlsafe(32),
             "POSTGRES_BIND_ADDRESS": "127.0.0.1",
             "DB_URL": "jdbc:postgresql://localhost:5432/han_menu",

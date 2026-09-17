@@ -28,7 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
 @ActiveProfiles("test")
 @DirtiesContext
 @TestExecutionListeners(
-    listeners = TestDatabase.Cleanup.class,
+    listeners = {TestDatabase.Cleanup.class, TestDatabase.RedisCleanup.class},
     mergeMode = MergeMode.MERGE_WITH_DEFAULTS)
 class ApplicationInfrastructureIt {
   private static final TestDatabase DATABASE = new TestDatabase(ApplicationInfrastructureIt.class);
