@@ -1,0 +1,52 @@
+# 本机开发中间件，与 PVE 上的 Hannote 实例和数据完全独立。
+services:
+  redis:
+    image: docker.io/library/redis:8.10.1-alpine
+    container_name: han-menu-redis
+    restart: unless-stopped
+    mem_limit: 512m
+    command: [redis-server, /usr/local/etc/redis/redis.conf]
+    environment:
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?请先运行 scripts/middleware.py up}"
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - ../.local/redis.conf:/usr/local/etc/redis/redis.conf:ro,Z
+      - redis_data:/data
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -qx PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+
+  rustfs:
+    image: docker.io/rustfs/rustfs:1.0.0
+    container_name: han-menu-rustfs
+    restart: unless-stopped
+    mem_limit: 2g
+    command: [/data]
+    environment:
+      RUSTFS_ACCESS_KEY: "${RUSTFS_ACCESS_KEY:?请先运行 scripts/middleware.py up}"
+      RUSTFS_SECRET_KEY: "${RUSTFS_SECRET_KEY:?请先运行 scripts/middleware.py up}"
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_OBS_LOGGER_LEVEL: error
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - rustfs_data:/data
+    healthcheck:
+      test: [CMD-SHELL, 'curl -fsS http://127.0.0.1:9000/health >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+volumes:
+  redis_data:
+    name: han-menu-redis-data
+  rustfs_data:
+    name: han-menu-rustfs-data

@@ -1,0 +1,16 @@
+[Unit]
+Description=Han Menu local Redis and RustFS
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=@PROJECT_DIR@
+ExecStart=/usr/bin/python3 "@PROJECT_DIR@/scripts/middleware.py" up
+ExecStop=/usr/bin/python3 "@PROJECT_DIR@/scripts/middleware.py" stop
+TimeoutStartSec=180
+TimeoutStopSec=60
+
+[Install]
+WantedBy=default.target

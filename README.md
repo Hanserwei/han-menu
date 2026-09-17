@@ -20,6 +20,10 @@
 ./scripts/setup-local-db.py
 ./scripts/install-hooks.sh
 
+# 新增中间件：独立 Redis 和 RustFS，不修改已有 PostgreSQL 容器。
+python3 scripts/middleware.py up
+python3 scripts/middleware.py install-service
+
 # 完整质量检查，包含真实 PostgreSQL 集成测试。
 ./scripts/verify.sh
 
@@ -29,6 +33,10 @@
 
 `GET /actuator/health` 用于检查应用和数据库连接。Spring Boot 不自动读取 `.env`，IDE 启动时
 需配置环境变量；命令行使用 `with-env.sh`。容器名称不同时可以设置 `PG_CONTAINER`。
+
+本机 Redis 8.10.1 位于 `127.0.0.1:6379`，RustFS 1.0.0 的 S3 接口位于 `127.0.0.1:9000`，
+控制台为 [RustFS Console](http://127.0.0.1:9001/rustfs/console/)。凭证在 `.env` 中。
+执行 `python3 scripts/middleware.py verify` 可验证实际读写；启动、停止及持久化说明见中间件清单。
 
 ## 代码布局
 
