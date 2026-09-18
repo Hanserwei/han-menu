@@ -3,6 +3,9 @@
 参考苍穹外卖的业务能力，以 Java 25、Spring Boot 4.1.1、Spring Modulith 2.1.1 构建 DDD
 模块化单体。当前已实现 P1 身份与员工管理，其余业务按阶段开发。
 
+顾客移动端采用 **Flutter App**，支付测试采用 **支付宝沙箱**。后端按移动端需求规划接口，
+当前未实现移动端工程或支付业务，边界见 [移动端与支付决策](docs/MOBILE_PAYMENT_DECISION.md)。
+
 ## 设计与使用
 
 - [架构决策](docs/ARCHITECTURE.md)：模块边界、面向对象、JPA、事务与接口设计。

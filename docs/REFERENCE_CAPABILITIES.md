@@ -3,6 +3,7 @@
 参考 [Danyhug/heima_sky_take_out 固定提交 f4013148](https://github.com/Danyhug/heima_sky_take_out/tree/f4013148cdd168c7af3e311dbb96b71cc532ff6b)。
 已盘点 17 个控制器、70 个 HTTP 处理方法和 11 张表定义，仅用于理解业务需求。
 本系统独立设计模型与协议，不继承这些路径、数据结构、默认账号或教学实现。
+参考源码中的微信和小程序只是原项目事实；本系统顾客端采用 Flutter App，支付测试采用支付宝沙箱。
 
 | 业务能力 | 参考实现 | 本系统归属 |
 | --- | --- | --- |
