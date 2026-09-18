@@ -7,6 +7,7 @@ import com.hanserwei.hanmenu.catalog.domain.CatalogException;
 import com.hanserwei.hanmenu.catalog.domain.CatalogRepository;
 import com.hanserwei.hanmenu.catalog.domain.ProductKind;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,5 +77,20 @@ public class PublicCatalog implements CatalogQuery {
       throw new CatalogException(CatalogException.Reason.NOT_FOUND, "商品分类已停用");
     }
     return CatalogMapper.product(value);
+  }
+
+  /** 商品删除、下架或分类关闭时返回空，仅用于只读展示的降级处理. */
+  @Override
+  public Optional<CatalogViews.ProductView> findAvailableProduct(UUID id) {
+    return repository
+        .product(id)
+        .filter(value -> value.onSale())
+        .filter(
+            value ->
+                repository
+                    .category(value.categoryId())
+                    .map(category -> category.enabled())
+                    .orElse(false))
+        .map(CatalogMapper::product);
   }
 }

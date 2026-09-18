@@ -85,6 +85,11 @@ class ApplicationInfrastructureIt {
             "catalog_image",
             "catalog_revision",
             "catalog_meal_component",
-            "shop_profile");
+            "shop_profile",
+            "customer_account",
+            "customer_session",
+            "customer_address",
+            "cart",
+            "cart_item");
   }
 }

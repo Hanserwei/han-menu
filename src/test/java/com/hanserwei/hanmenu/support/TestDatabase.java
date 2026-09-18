@@ -56,6 +56,8 @@ public final class TestDatabase implements AutoCloseable {
     registry.add("spring.datasource.hikari.schema", () -> schema);
     registry.add("spring.flyway.default-schema", () -> schema);
     registry.add("han-menu.identity.redis-key-prefix", () -> "han-menu:test:" + schema + ":login:");
+    registry.add(
+        "han-menu.customer.redis-key-prefix", () -> "han-menu:test:" + schema + ":customer:");
     registry.add("han-menu.catalog.cache-prefix", () -> "han-menu:test:" + schema + ":catalog:");
     registry.add(
         "han-menu.catalog.storage.bucket",

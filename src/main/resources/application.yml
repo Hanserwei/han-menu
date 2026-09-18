@@ -67,6 +67,12 @@ management:
     health:
       show-details: never
 han-menu:
+  customer:
+    session-ttl: PT24H
+    login-max-attempts: 10
+    login-max-ip-attempts: 50
+    login-window: PT1M
+    redis-key-prefix: "han-menu:customer:auth:"
   catalog:
     cache-prefix: "han-menu:catalog:"
     storage:

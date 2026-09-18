@@ -29,6 +29,9 @@ final class SessionAuthenticationFilter extends OncePerRequestFilter {
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getRequestURI().substring(request.getContextPath().length());
     return (path.equals("/api/v1/sessions") && request.getMethod().equals("POST"))
+        // 菜单为匿名公共资源，Flutter 即使附带顾客令牌也不应进入员工认证流程。
+        || (request.getMethod().equals("GET")
+            && (path.startsWith("/api/v1/menu/") || path.equals("/api/v1/storefront")))
         || path.startsWith("/actuator/health")
         || path.startsWith("/v3/api-docs")
         || path.startsWith("/swagger-ui");
