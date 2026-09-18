@@ -8,6 +8,20 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     services:
+      rustfs:
+        image: rustfs/rustfs:1.0.0
+        env:
+          RUSTFS_ACCESS_KEY: ci-han-menu-access
+          RUSTFS_SECRET_KEY: ci-han-menu-secret-for-tests
+          RUSTFS_VOLUMES: /data
+          RUSTFS_CONSOLE_ENABLE: 'false'
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -fsS http://127.0.0.1:9000/health"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
       redis:
         image: redis:8.10.1-alpine
         ports:
@@ -31,6 +45,10 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     env:
+      RUSTFS_ENDPOINT: http://127.0.0.1:9000
+      RUSTFS_ACCESS_KEY: ci-han-menu-access
+      RUSTFS_SECRET_KEY: ci-han-menu-secret-for-tests
+      RUSTFS_TEST_BUCKET: han-menu-test
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: '6379'
       TEST_DB_URL: jdbc:postgresql://localhost:5432/han_menu_test

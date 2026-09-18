@@ -3,7 +3,7 @@
 ## 产品定位
 
 这是以苍穹外卖业务能力为参考的全新外卖系统。没有旧用户、旧业务数据或旧客户端契约需要承接。
-管理端、Flutter 移动端 App、领域模型、API 和表结构都按新版本设计。当前实现身份模块，其他模块按计划推进。
+管理端、Flutter 移动端 App、领域模型、API 和表结构都按新版本设计。当前实现身份、目录和门店模块，其他模块按计划推进。
 
 本项目为个人学习项目，支付测试采用支付宝沙箱，不要求正式商户资质或生产资金交易。
 移动端与支付接口的规划边界见 [决策记录](MOBILE_PAYMENT_DECISION.md)；本轮仅调整决策，不提前实现支付。
@@ -101,7 +101,7 @@ P3 的顾客认证面向 Flutter App，独立于员工角色及会话权限，�
 
 ## 数据库基线与演进
 
-当前为未发布的新项目，已重新建立干净基线：V1 身份模块，V2 JPA 事件登记。没有旧账号导入、
+当前基线为 V1 身份模块、V2 JPA 事件登记，P2 新增 V3 目录与门店。没有旧账号导入、
 演示业务表、兼容表或历史数据转换流程。后续迭代通过新增 Flyway 迁移演进，不依赖 Hibernate 自动改表。
 
 开发初期的架构试验快照保存在被 Git 忽略的本地备份目录，仅用于误操作恢复，不参与应用启动或设计。
@@ -118,3 +118,12 @@ P3 的顾客认证面向 Flutter App，独立于员工角色及会话权限，�
 参考：[Spring Data 实体持久化](https://docs.spring.io/spring-data/jpa/reference/jpa/entity-persistence.html)、
 [派生查询](https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html)、
 [Modulith 事件机制](https://docs.spring.io/spring-modulith/reference/events.html)。
+
+## P2 目录实现决策
+
+菜单商品共用 MenuProduct 聚合，通过不可变的 DISH/SET_MEAL 种类维护口味及组成差异，避免
+重复两套 CRUD。分类、商品和图片在 catalog 内拥有独立资源。后台低频写入通过目录修订行串行
+检查跨聚合引用，同时用版本号防止陈旧编辑。缓存使用同事务修订号隔离代际，详情和未来下单校验
+读取数据库。shop 独立维护当前营业状态，两者仅依赖 identity 的公开授权契约。
+
+具体限制、图片上传补偿边界和查询策略见 [P2 契约](P2_CONTRACT.md)。

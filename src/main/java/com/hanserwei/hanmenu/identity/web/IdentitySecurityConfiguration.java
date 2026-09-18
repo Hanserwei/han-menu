@@ -53,6 +53,8 @@ class IdentitySecurityConfiguration {
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/sessions")
                     .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/menu/**", "/api/v1/storefront")
+                    .permitAll()
                     .requestMatchers(
                         HttpMethod.GET,
                         "/actuator/health",
@@ -68,7 +70,13 @@ class IdentitySecurityConfiguration {
                     .authenticated()
                     .requestMatchers(HttpMethod.PUT, "/api/v1/me/password")
                     .authenticated()
-                    .requestMatchers("/api/v1/employees", "/api/v1/employees/**", "/actuator/info")
+                    .requestMatchers(
+                        "/api/v1/employees",
+                        "/api/v1/employees/**",
+                        "/actuator/info",
+                        "/api/v1/catalog/**",
+                        "/api/v1/shop",
+                        "/api/v1/shop/**")
                     .hasRole("ADMIN")
                     .anyRequest()
                     .denyAll())

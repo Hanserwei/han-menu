@@ -3,11 +3,11 @@
  *
  * <p>管理分类、菜品、口味、套餐和销售状态。负责商品当前信息和可售性；订单中的名称、口味、价格等历史快照由订单模块维护。
  *
- * <p>当前仅声明模块边界。跨模块依赖默认关闭，实现具体用例时再按公开契约逐项开放。
+ * <p>P2 已实现本模块业务；仅依赖 identity 的公开授权契约，不读取其他模块的内部实体。
  */
 @ApplicationModule(
     displayName = "商品目录",
-    allowedDependencies = {})
+    allowedDependencies = {"identity :: api"})
 package com.hanserwei.hanmenu.catalog;
 
 import org.springframework.modulith.ApplicationModule;

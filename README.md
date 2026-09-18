@@ -1,7 +1,7 @@
 # Han Menu · 全新外卖系统
 
 参考苍穹外卖的业务能力，以 Java 25、Spring Boot 4.1.1、Spring Modulith 2.1.1 构建 DDD
-模块化单体。当前已实现 P1 身份与员工管理，其余业务按阶段开发。
+模块化单体。当前已实现 P1 身份与员工管理，以及 P2 商品目录、图片、公开菜单和门店营业。
 
 顾客移动端采用 **Flutter App**，支付测试采用 **支付宝沙箱**。后端按移动端需求规划接口，
 当前未实现移动端工程或支付业务，边界见 [移动端与支付决策](docs/MOBILE_PAYMENT_DECISION.md)。
@@ -9,6 +9,8 @@
 ## 设计与使用
 
 - [架构决策](docs/ARCHITECTURE.md)：模块边界、面向对象、JPA、事务与接口设计。
+- [P1 验收](docs/P1_ACCEPTANCE.md)：进入 P2 前的范围与验证结果。
+- [P2 API](docs/P2_CONTRACT.md)：分类、菜品、口味、套餐、图片、缓存和门店营业。
 - [P1 API](docs/P1_CONTRACT.md)：新会话与员工资源、认证、错误、分页与版本约定。
 - [实施计划](docs/REFACTORING_PLAN.md)：九个业务模块及后续阶段。
 - [业务参考清单](docs/REFERENCE_CAPABILITIES.md)：从苍穹外卖识别的功能需求。
@@ -25,7 +27,7 @@ python3 scripts/middleware.py up
 python3 scripts/middleware.py install-service
 ./scripts/install-hooks.sh
 
-# 格式、规范、模块架构、真实 PostgreSQL/Redis 及 ORM 验证。
+# 格式、规范、模块架构、真实 PostgreSQL/Redis/RustFS 及 ORM 验证。
 ./scripts/verify.sh
 
 # 启动应用，默认监听 127.0.0.1:8080。
@@ -46,8 +48,8 @@ com.hanserwei.hanmenu
 ├── HanMenuApplication
 ├── identity       员工身份与账号（已实现）
 ├── customer       顾客与地址
-├── shop           门店经营
-├── catalog        分类、菜品、口味、套餐
+├── shop           门店经营（已实现）
+├── catalog        分类、菜品、口味、套餐（已实现）
 ├── cart           购物车
 ├── ordering       订单与履约
 ├── payment        支付与退款
@@ -56,13 +58,13 @@ com.hanserwei.hanmenu
 ```
 
 各模块使用 domain/application/infrastructure/web 分层，api/events 为明确发布的模块契约。
-identity 的持久化集中在 `infrastructure/persistence`：Spring Data 接口、JPA 实体及仓储适配器。
+identity、catalog、shop 的持久化集中在 `infrastructure/persistence`：Spring Data 接口、JPA 实体及仓储适配器。
 领域模型封装业务行为，HTTP 仅返回专用 DTO。
 
 ## 关键基线
 
 - Spring Data JPA 4.1.1 / Hibernate 7.4.5.Final：ORM 映射、派生查询、版本锁、实体图。
-- Flyway：V1 身份模型，V2 Modulith JPA 事件登记；Hibernate 只校验结构，Open-in-View 关闭。
+- Flyway：V1 身份模型，V2 Modulith JPA 事件登记，V3 目录与门店；Hibernate 只校验结构，Open-in-View 关闭。
 - UUID 业务标识、UTC 时刻、必填更新版本、零基分页、严格 JSON 字段校验。
 - Spring Security、BCrypt、持久化会话、Redis 双维度登录限流、最小化安全审计。
 - Guava 33.7.1-jre、Commons Lang3 3.20.0、springdoc-openapi 3.1.1。
@@ -70,7 +72,7 @@ identity 的持久化集中在 `infrastructure/persistence`：Spring Data 接口
 
 参考项目仅提供业务输入。本系统没有旧账号导入、旧 API 适配层或演示表。
 项目数据库为 `han_menu`、`han_menu_test`，与 `pg18_lab` 等其他数据库分开管理。
-当前代码尚未提供商品、订单、支付等后续业务接口。
+当前提供商品与门店接口，顾客、购物车、订单与支付仍按后续阶段实施。
 
 ## 开发与验证
 

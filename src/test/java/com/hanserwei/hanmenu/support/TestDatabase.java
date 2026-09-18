@@ -56,6 +56,11 @@ public final class TestDatabase implements AutoCloseable {
     registry.add("spring.datasource.hikari.schema", () -> schema);
     registry.add("spring.flyway.default-schema", () -> schema);
     registry.add("han-menu.identity.redis-key-prefix", () -> "han-menu:test:" + schema + ":login:");
+    registry.add("han-menu.catalog.cache-prefix", () -> "han-menu:test:" + schema + ":catalog:");
+    registry.add(
+        "han-menu.catalog.storage.bucket",
+        () -> System.getenv().getOrDefault("RUSTFS_TEST_BUCKET", "han-menu-test"));
+    registry.add("han-menu.catalog.storage.key-prefix", () -> "han-menu-test/" + schema + "/");
   }
 
   /** 释放本实例创建的 schema；必须在 Spring 上下文完成关闭之后调用. */
@@ -106,7 +111,10 @@ public final class TestDatabase implements AutoCloseable {
       }
       var context = testContext.getApplicationContext();
       String prefix =
-          context.getEnvironment().getRequiredProperty("han-menu.identity.redis-key-prefix");
+          context
+              .getEnvironment()
+              .getRequiredProperty("han-menu.identity.redis-key-prefix")
+              .replace(":login:", ":");
       if (!prefix.startsWith("han-menu:test:")) {
         throw new IllegalStateException("拒绝清理非测试 Redis 命名空间");
       }

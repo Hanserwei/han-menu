@@ -37,6 +37,10 @@ spring:
     # 使用 JDK 的虚拟线程支持；业务代码仍须明确事务和异步执行边界。
     virtual:
       enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
   mvc:
     problemdetails:
       # 工程统一处理 RFC 9457 扩展字段，避免默认 Advice 与模块 Advice 竞争。
@@ -63,6 +67,16 @@ management:
     health:
       show-details: never
 han-menu:
+  catalog:
+    cache-prefix: "han-menu:catalog:"
+    storage:
+      endpoint: ${RUSTFS_ENDPOINT:http://127.0.0.1:9000}
+      public-endpoint: ${RUSTFS_PUBLIC_ENDPOINT:${RUSTFS_ENDPOINT:http://127.0.0.1:9000}}
+      region: ${RUSTFS_REGION:us-east-1}
+      access-key: ${RUSTFS_ACCESS_KEY}
+      secret-key: ${RUSTFS_SECRET_KEY}
+      bucket: ${RUSTFS_BUCKET:han-menu}
+      key-prefix: catalog/
   identity:
     session-ttl: PT8H
     login-max-attempts: 10

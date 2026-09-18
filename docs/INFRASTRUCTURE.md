@@ -40,7 +40,7 @@ python3 scripts/middleware.py verify
 用户单元；普通停止不删除数据，不应使用 `down -v` 作为日常停止命令。
 
 部署脚本使用系统 Python 标准库和 podman-compose，不新增应用 SDK。它只允许本机端点，不能
-拿来初始化远端 Hannote 资源。P1 已接入 Redis 登录限流；商品缓存与图片存储适配器按 P2 实施。
+拿来初始化远端 Hannote 资源。P1 已接入 Redis 登录限流；P2 已接入公开目录缓存与 RustFS 图片存储。
 
 三项服务的唯一启动入口是 `python3 scripts/middleware.py up`，不再保留单独的数据库启动脚本。
 
@@ -119,19 +119,19 @@ Redis 版本来自运行实例。RustFS 的 Compose 文件固定为 `1.0.0-beta.
 配置目录还包含腾讯云 COS 的配置项，本次没有访问云服务或验证其凭证。
 只选择项目需要的连接项，不整体加载 Hannote 的 `dev.env`，避免带入其数据库、认证及配置中心设置。
 
-P1 的运行与完整测试需要 PostgreSQL 和 Redis。RustFS 已部署，图片适配器在 P2 接入。
+P2 的运行与完整测试需要 PostgreSQL、Redis 和 RustFS；对象测试使用专用测试桶和随机前缀。
 
 | 资源 | 何时需要 | 用途 | 请准备的信息 |
 | --- | --- | --- | --- |
 | PostgreSQL 18.6 | 已就绪 | 业务数据、Flyway、Modulith 事件登记 | 已在本地 `.env` 配好 |
 | Redis | P1 已接入 | 原子登录限流；会话撤销由 PostgreSQL 保证 | 凭证和前缀已在 .env，测试使用隔离前缀 |
-| 图片对象存储 | 本机已就绪，P2 接入 | RustFS 1.0.0，菜品和套餐图片 | 两个专用 Bucket 已建立，后续编写存储端口与 SDK 适配器 |
+| 图片对象存储 | P2 已接入 | RustFS 1.0.0，私有 PNG/JPEG 图片 | 开发/测试独立 Bucket、S3 SDK 适配器与五分钟签名读取 |
 | Flutter 开发与测试设备 | P3/P7 移动端联调 | 原生 App 调用顾客 API 和支付 SDK | 目标 Android/iOS 平台、设备到开发 API 的可达地址；P1 员工认证不作为顾客登录 |
 | 支付宝沙箱环境 | P5 沙箱联调 | App 支付下单参数、通知、查单及退款测试 | 沙箱应用 ID、应用私钥配置位置、支付宝沙箱公钥/验签配置、测试账号及可达通知地址 |
 | Nginx 或等价反向代理 | P7 | 新客户端静态资源、`/api/v1` 转发、WebSocket、TLS | 监听地址、端口、域名、证书位置及静态文件目录 |
 
 当前 PostgreSQL、Redis、RustFS 都已准备好，无需再安排这三项基础服务。
-身份模块已实现数据库会话与 Redis 限流，商品缓存和图片上传仍属于后续阶段。
+身份模块使用数据库会话与 Redis 限流；目录使用 Redis 缓存与 S3 图片存储。
 后续只需按阶段准备 Flutter 测试环境和支付宝沙箱配置，无需安排微信小程序账号或正式支付商户资源。
 
 ## Redis 约定

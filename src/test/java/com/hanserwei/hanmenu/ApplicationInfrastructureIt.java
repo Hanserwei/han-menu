@@ -79,6 +79,12 @@ class ApplicationInfrastructureIt {
             "flyway_schema_history",
             "identity_employee",
             "identity_session",
-            "identity_audit");
+            "identity_audit",
+            "catalog_category",
+            "catalog_product",
+            "catalog_image",
+            "catalog_revision",
+            "catalog_meal_component",
+            "shop_profile");
   }
 }

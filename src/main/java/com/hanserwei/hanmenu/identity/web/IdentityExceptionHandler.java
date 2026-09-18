@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 /** 映射身份用例失败，禁止把校验异常的 rejectedValue 或底层 SQL 直接写入响应. */
 @Order(100)
@@ -65,6 +67,7 @@ class IdentityExceptionHandler {
     ConstraintViolationException.class,
     HttpMessageNotReadableException.class,
     MissingServletRequestParameterException.class,
+    MissingServletRequestPartException.class,
     MethodArgumentTypeMismatchException.class,
     IllegalArgumentException.class
   })
@@ -73,9 +76,14 @@ class IdentityExceptionHandler {
     responses.write(request, response, 400, "请求参数不合法");
   }
 
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  void oversized(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    responses.write(request, response, 413, "IMAGE_TOO_LARGE", "上传文件超过大小限制");
+  }
+
   @ExceptionHandler(DataIntegrityViolationException.class)
   void duplicate(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    responses.write(request, response, 409, "DATA_CONFLICT", "资源冲突，请检查用户名是否重复");
+    responses.write(request, response, 409, "DATA_CONFLICT", "资源约束冲突，请检查名称或关联资源");
   }
 
   @ExceptionHandler(OptimisticLockingFailureException.class)

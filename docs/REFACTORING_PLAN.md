@@ -6,7 +6,8 @@
 需要兼容。源码参考版本为 [f4013148](https://github.com/Danyhug/heima_sky_take_out/tree/f4013148cdd168c7af3e311dbb96b71cc532ff6b)。
 业务盘点见 [参考能力清单](REFERENCE_CAPABILITIES.md)，本系统架构见 [架构决策](ARCHITECTURE.md)。
 
-P0 基础设施与模块骨架已建立，P1 身份模块已按新接口与 JPA 重整。P2—P7 尚未实施。
+P0/P1 已完成，P1 复查见 [验收记录](P1_ACCEPTANCE.md)。P2 已实现商品目录与门店营业，
+范围和验证见 [P2 契约](P2_CONTRACT.md)。P3—P7 尚未实施。
 顾客端确定使用 Flutter App，支付测试只使用支付宝沙箱；本轮后端只规划足够的契约与扩展点。
 详细边界见 [移动端与支付决策](MOBILE_PAYMENT_DECISION.md)。
 每个阶段按实际用例纵向交付领域行为、持久化、API、测试和文档；不先批量堆砌空 Service/Mapper。
@@ -27,7 +28,7 @@ P0 基础设施与模块骨架已建立，P1 身份模块已按新接口与 JPA 
 | identity | 员工身份、权限、账号生命周期 | EmployeeAccount、Session、认证策略 |
 | customer | 顾客资料、收货地址和默认地址 | Customer、AddressBook、DeliveryAddress |
 | shop | 营业状态、营业时间与配送政策 | Shop、OpeningStatus、配送规则 |
-| catalog | 分类、菜品、口味、套餐、可售性与图片 | Dish、SetMeal、Category |
+| catalog | 分类、菜品、口味、套餐、可售性与图片 | MenuProduct（DISH/SET_MEAL）、Category |
 | cart | 选择商品、规格与数量、合并与清理 | ShoppingCart、CartItem |
 | ordering | 下单、接单、拒单、取消、履约、再来一单、催单 | Order、OrderLine、金额及地址快照 |
 | payment | 支付单、渠道回调、退款与对账 | Payment、Refund、PaymentGateway |
@@ -62,8 +63,8 @@ ordering 调用 payment 的公开 API 发起支付/退款意图，监听 payment
 | 阶段 | 交付内容 | 核心验收 |
 | --- | --- | --- |
 | P0 · 完成 | 模块骨架、JDK/Boot/Modulith、三项本机中间件、质量门禁 | 可启动、可验证、统一管理 |
-| P1 · 已重整 | JPA 身份模型、新会话/员工 API、权限、审计、文档 | 真实认证、撤销、限流、ORM 并发及事务验证；无兼容接口 |
-| P2 · 商品与营业 | 分类、菜品、口味、套餐、上下架、图片与营业状态 | 聚合约束、ORM 关联策略、缓存失效、对象存储验证 |
+| P1 · 已验收 | JPA 身份模型、新会话/员工 API、权限、审计、文档 | 真实认证、撤销、限流、ORM 并发及事务验证；无兼容接口 |
+| P2 · 已实现 | 分类、菜品、口味、套餐、上下架、图片与营业状态 | 聚合约束、ORM 关联策略、缓存失效、对象存储验证 |
 | P3 · 顾客与购物车 | 面向 Flutter App 的顾客认证、档案、地址和购物车 | 顾客/员工身份隔离、地址归属、唯一默认地址、数量/规格约束、并发隔离 |
 | P4 · 下单与订单 | 重新计价、订单快照、幂等提交、查询、未付款取消和再来一单 | 价格不能由前端决定，重复提交不重复建单，回滚一致 |
 | P5 · 支付与履约 | 支付端口及支付宝沙箱适配、创建/查询/回调/退款、接单与履约 | 沙箱验签与金额校验、幂等、乱序、超时竞争和失败恢复；不要求生产支付 |
