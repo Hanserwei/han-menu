@@ -54,6 +54,8 @@ public class OrderEntity {
   Order.RefundStatus refundStatus;
 
   UUID refundId;
+  int reminderCount;
+  Instant lastRemindedAt;
 
   /** ORM 重建入口. */
   protected OrderEntity() {}
@@ -86,6 +88,8 @@ public class OrderEntity {
     cancelReason = lifecycle.cancelReason();
     refundStatus = lifecycle.refundStatus();
     refundId = lifecycle.refundId();
+    reminderCount = value.reminderCount();
+    lastRemindedAt = value.lastRemindedAt();
   }
 
   Order domain() {
@@ -109,7 +113,9 @@ public class OrderEntity {
                 completedAt,
                 cancelReason,
                 refundStatus,
-                refundId));
+                refundId),
+            reminderCount,
+            lastRemindedAt);
     if (value.total().compareTo(total) != 0) {
       throw new IllegalStateException("订单金额与条目不一致");
     }

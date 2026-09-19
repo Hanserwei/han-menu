@@ -113,6 +113,12 @@ class PaymentAndFulfillmentIt {
   private String staffToken;
   private UUID orderId;
 
+  /** 在测试替身重置或 schema 清理前等待派生事件，保留真实异步语义. */
+  @org.junit.jupiter.api.AfterEach
+  void awaitEvents() throws InterruptedException {
+    TestDatabase.awaitPublications(jdbc);
+  }
+
   @DynamicPropertySource
   static void properties(DynamicPropertyRegistry registry) {
     DATABASE.configure(registry);
@@ -438,15 +444,16 @@ class PaymentAndFulfillmentIt {
   }
 
   @Test
-  void paymentStateAndReliableEventRegistrationRollbackTogether() {
+  void paymentStateAndReliableEventRegistrationRollbackTogether() throws Exception {
     final UUID payment = createPayment();
+    TestDatabase.awaitPublications(jdbc);
     transactions.executeWithoutResult(
         status -> {
           payments.observe(payment, result(PaymentGateway.State.SUCCEEDED));
           org.springframework.orm.jpa.SharedEntityManagerCreator.createSharedEntityManager(
                   entityManagerFactory)
               .flush();
-          assertThat(count("event_publication")).isEqualTo(1);
+          assertThat(count("event_publication")).isEqualTo(2);
           status.setRollbackOnly();
         });
     assertThat(count("event_publication")).isZero();

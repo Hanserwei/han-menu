@@ -25,6 +25,7 @@ public class OrderLifecycleService {
   private final StaffAuthorization staff;
   private final PaymentOperations payments;
   private final Clock clock;
+  private final OrderEvents events;
 
   /** 只依赖公开模块契约和本模块仓储. */
   public OrderLifecycleService(
@@ -32,12 +33,14 @@ public class OrderLifecycleService {
       CustomerCheckout customers,
       StaffAuthorization staff,
       PaymentOperations payments,
-      Clock clock) {
+      Clock clock,
+      OrderEvents events) {
     this.orders = orders;
     this.customers = customers;
     this.staff = staff;
     this.payments = payments;
     this.clock = clock;
+    this.events = events;
   }
 
   /** 先锁顾客再锁订单；同键重试验证原意图而非拒绝已经变化的订单版本. */
@@ -53,7 +56,7 @@ public class OrderLifecycleService {
             order.id(), identity.customerId(), order.total(), order.expiresAt(), key, version);
     if (order.lifecycle().paymentId() == null) {
       order.attachPayment(intent.id(), version, clock.instant());
-      orders.update(order);
+      save(order);
     } else if (!order.lifecycle().paymentId().equals(intent.id())) {
       throw new OrderException(OrderException.Reason.STATE_CONFLICT, "支付单与订单不匹配");
     }
@@ -87,7 +90,7 @@ public class OrderLifecycleService {
     if (action == Action.REJECT || action == Action.CANCEL) {
       saveCancellation(order);
     } else {
-      orders.update(order);
+      save(order);
     }
     return OrderViews.detail(orders.find(id).orElseThrow());
   }
@@ -118,6 +121,7 @@ public class OrderLifecycleService {
     if (!order.customerId().equals(result.customerId())) {
       throw new OrderException(OrderException.Reason.STATE_CONFLICT, "支付归属不一致");
     }
+    var previous = order.status();
     if (result.status().equals("SUCCEEDED")) {
       if (order.paymentSucceeded(
           result.paymentId(), result.amount(), result.paidAt(), clock.instant())) {
@@ -126,14 +130,17 @@ public class OrderLifecycleService {
     } else if (result.status().equals("CLOSED")) {
       order.paymentClosed(result.paymentId(), result.amount(), clock.instant());
     }
-    orders.update(order);
+    save(order);
+    if (previous == Order.Status.UNPAID && order.status() == Order.Status.PAID) {
+      events.ready(order.id(), order.lifecycle().paidAt());
+    }
   }
 
   /** 退款确认后结束取消；终态和退款号使重复投递保持幂等. */
   public void refundResult(RefundResult result) {
     var order = orders.lock(result.businessRef());
     order.refundSucceeded(result.paymentId(), result.refundId(), result.amount(), clock.instant());
-    orders.update(order);
+    save(order);
   }
 
   /** 一次只获取最多一百个超时订单，避免无界事务. */
@@ -151,11 +158,26 @@ public class OrderLifecycleService {
     }
   }
 
+  /** 当前顾客在订单锁内催单，状态、版本与冷却窗口全部通过领域验证. */
+  public OrderViews.Detail remind(CustomerIdentity identity, UUID id, long version) {
+    customers.lockActive(identity);
+    var order = ownLocked(identity, id);
+    order.remind(version, clock.instant());
+    save(order);
+    events.reminder(order);
+    return OrderViews.detail(orders.find(id).orElseThrow());
+  }
+
+  private void save(Order order) {
+    orders.update(order);
+    events.changed(order);
+  }
+
   private void saveCancellation(Order order) {
     if (order.lifecycle().paymentId() != null) {
       payments.stop(order.lifecycle().paymentId());
     }
-    orders.update(order);
+    save(order);
   }
 
   private Order ownLocked(CustomerIdentity identity, UUID id) {

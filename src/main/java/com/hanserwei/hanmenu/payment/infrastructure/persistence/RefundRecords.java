@@ -18,4 +18,10 @@ interface RefundRecords extends JpaRepository<RefundEntity, UUID> {
 
   List<RefundEntity> findByNextAttemptAtLessThanEqualOrderByNextAttemptAtAscIdAsc(
       Instant now, Pageable pageable);
+
+  List<RefundEntity> findByStatusOrderByIdAsc(
+      com.hanserwei.hanmenu.payment.domain.Refund.Status status, Pageable page);
+
+  List<RefundEntity> findByStatusAndIdGreaterThanOrderByIdAsc(
+      com.hanserwei.hanmenu.payment.domain.Refund.Status status, UUID cursor, Pageable page);
 }

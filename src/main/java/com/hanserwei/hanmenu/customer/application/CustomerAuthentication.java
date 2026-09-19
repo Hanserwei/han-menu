@@ -25,6 +25,7 @@ public class CustomerAuthentication {
   private final CustomerTokenFactory tokens;
   private final Clock clock;
   private final Duration ttl;
+  private final org.springframework.context.ApplicationEventPublisher events;
   private final CustomerAttemptLimiter limiter;
 
   /** 通过领域端口组合顾客认证，不引入微信或短信供应商. */
@@ -35,7 +36,8 @@ public class CustomerAuthentication {
       CustomerTokenFactory tokens,
       CustomerAttemptLimiter limiter,
       Clock clock,
-      @Value("${han-menu.customer.session-ttl}") Duration ttl) {
+      @Value("${han-menu.customer.session-ttl}") Duration ttl,
+      org.springframework.context.ApplicationEventPublisher events) {
     if (ttl.isZero() || ttl.isNegative() || ttl.compareTo(Duration.ofDays(30)) > 0) {
       throw new IllegalArgumentException("顾客会话有效期必须在 30 天以内");
     }
@@ -45,6 +47,7 @@ public class CustomerAuthentication {
     this.tokens = tokens;
     this.clock = clock;
     this.ttl = ttl;
+    this.events = events;
     this.limiter = limiter;
   }
 
@@ -65,6 +68,9 @@ public class CustomerAuthentication {
             passwords.encode(password),
             clock.instant());
     customers.add(customer);
+    events.publishEvent(
+        new com.hanserwei.hanmenu.customer.events.CustomerRegistered(
+            customer.id(), customer.createdAt()));
     return customer;
   }
 

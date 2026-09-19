@@ -191,3 +191,12 @@ P5 已在当前本机接入支付宝网页／移动沙箱应用，凭证位于�
 本机 DNS 对 Cloudflare SRV 查询曾返回 NXDOMAIN，验收通过官方 DoH 查询得到的边缘地址连接，
 没有修改主机 DNS、证书验证或网络安全配置。临时隧道结束后，下一次联调需要新的有效 HTTPS 回调地址。
 可复现的验收工具与命令见 [P5 契约](P5_CONTRACT.md)。
+
+## P6 运行参数
+
+P6 继续复用 PostgreSQL、Redis、RustFS，不引入额外消息中间件。首次启动通过公开业务快照 API
+自动初始化统计投影；失败时工作台／报表返回明确未就绪状态，可重试维护接口。
+`EVENT_RECOVERY_ENABLED`、`NOTIFICATION_SCHEDULING_ENABLED`、`REPORTING_BOOTSTRAP_ENABLED`
+默认 true。`NOTIFICATION_ALLOWED_ORIGINS` 默认空表示同源；跨来源部署必须显式配置来源，不允许通配符。
+长连接当前使用单进程注册表，公开部署需由 P7 的受信任反向代理提供 WSS，客户端按契约补查消息。
+新 V7 迁移与运行协议见 [P6 契约](P6_CONTRACT.md)。

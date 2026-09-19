@@ -197,3 +197,9 @@ ALIPAY_SANDBOX_ACCEPTANCE=true ./scripts/alipay-sandbox-acceptance.sh
 - 验收随机 schema 已由工具正常清理，临时转发器、隧道与收银台已关闭。当前沙箱凭证仍在被忽略的
   `.env`（权限 600）；过期的临时 ALIPAY_NOTIFY_URL 已移除。再次支付联调前须配置有效 HTTPS 通知地址。
 - 本次未向开发库应用 V6、未清空开发数据、未接触生产资金；没有创建 Flutter 工程或声称已完成真机 SDK 联调。
+
+## P6 后续演进
+
+P6 已增加订单统计快照、来单与催单事件及统计消费者；事件恢复任务现在由独立的应用级
+`EVENT_RECOVERY_ENABLED` 控制，不再附属于支付轮询开关。现行通知、统计与重建行为见
+[P6 契约](P6_CONTRACT.md)，付款／关单／退款业务规则保持原语义。

@@ -25,5 +25,12 @@ interface OrderRecords
       java.time.Instant before,
       Pageable pageable);
 
+  java.util.List<OrderEntity> findAllByOrderByIdAsc(Pageable pageable);
+
+  java.util.List<OrderEntity> findByIdGreaterThanOrderByIdAsc(UUID cursor, Pageable pageable);
+
+  @EntityGraph(attributePaths = "lines")
+  java.util.List<OrderEntity> findByIdIn(java.util.Collection<UUID> ids);
+
   Page<OrderSummaryValue> findByCustomerId(UUID customerId, Pageable pageable);
 }

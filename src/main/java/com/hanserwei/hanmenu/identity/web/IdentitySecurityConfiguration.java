@@ -80,6 +80,11 @@ class IdentitySecurityConfiguration {
                     .hasRole("ADMIN")
                     .requestMatchers("/api/v1/management/orders", "/api/v1/management/orders/**")
                     .hasAnyRole("ADMIN", "STAFF")
+                    .requestMatchers(
+                        "/api/v1/notifications", "/api/v1/notifications/**", "/api/v1/workspace")
+                    .hasAnyRole("ADMIN", "STAFF")
+                    .requestMatchers("/api/v1/reports", "/api/v1/reports/**")
+                    .hasRole("ADMIN")
                     .anyRequest()
                     .denyAll())
         .exceptionHandling(

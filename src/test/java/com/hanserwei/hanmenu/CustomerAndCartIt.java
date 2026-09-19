@@ -94,6 +94,12 @@ class CustomerAndCartIt {
   private UUID dish;
   private UUID category;
 
+  /** 在测试替身重置或 schema 清理前等待派生事件，保留真实异步语义. */
+  @org.junit.jupiter.api.AfterEach
+  void awaitEvents() throws InterruptedException {
+    TestDatabase.awaitPublications(jdbc);
+  }
+
   @DynamicPropertySource
   static void properties(DynamicPropertyRegistry registry) {
     DATABASE.configure(registry);

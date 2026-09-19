@@ -33,6 +33,7 @@ public class OrderService {
   private final CatalogCheckout catalog;
   private final CartCheckout carts;
   private final Clock clock;
+  private final OrderEvents events;
 
   /** 只通过命名公开契约调用其他模块，事务中不进行外部网络调用. */
   public OrderService(
@@ -42,7 +43,8 @@ public class OrderService {
       ShopQuery shop,
       CatalogCheckout catalog,
       CartCheckout carts,
-      Clock clock) {
+      Clock clock,
+      OrderEvents events) {
     this.orders = orders;
     this.authorization = authorization;
     this.customers = customers;
@@ -50,6 +52,7 @@ public class OrderService {
     this.catalog = catalog;
     this.carts = carts;
     this.clock = clock;
+    this.events = events;
   }
 
   /**
@@ -120,6 +123,7 @@ public class OrderService {
             clock.instant());
     orders.add(order);
     carts.settle(identity, command.cartVersion(), command.itemIds());
+    events.created(order.id());
     return new Submission(OrderViews.detail(own(identity, order.id())), false);
   }
 

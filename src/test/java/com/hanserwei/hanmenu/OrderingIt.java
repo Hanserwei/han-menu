@@ -93,6 +93,12 @@ class OrderingIt {
   private UUID dish;
   private UUID category;
 
+  /** 在测试替身重置或 schema 清理前等待派生事件，保留真实异步语义. */
+  @org.junit.jupiter.api.AfterEach
+  void awaitEvents() throws InterruptedException {
+    TestDatabase.awaitPublications(jdbc);
+  }
+
   @DynamicPropertySource
   static void properties(DynamicPropertyRegistry registry) {
     DATABASE.configure(registry);
@@ -448,6 +454,7 @@ class OrderingIt {
         .andExpect(status().isBadRequest());
     mvc.perform(auth(get("/api/v1/orders").param("page", "1"), token))
         .andExpect(jsonPath("$.items").isEmpty());
+    TestDatabase.awaitPublications(jdbc);
     var statistics =
         entityManagerFactory.unwrap(org.hibernate.SessionFactory.class).getStatistics();
     boolean enabled = statistics.isStatisticsEnabled();

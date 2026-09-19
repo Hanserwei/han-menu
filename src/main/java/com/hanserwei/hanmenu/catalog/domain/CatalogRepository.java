@@ -53,4 +53,7 @@ public interface CatalogRepository {
 
   /** 判断图片是否被可售商品引用，控制公开临时下载入口. */
   boolean imagePublished(UUID id);
+
+  /** 统计指定类型和可售状态的商品数量，供工作台公开摘要使用. */
+  long countProducts(ProductKind kind, boolean onSale);
 }

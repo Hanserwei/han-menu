@@ -105,4 +105,17 @@ class JpaOrderRepository implements OrderRepository {
         result.getContent().stream().map(OrderSummaryValue::domain).toList(),
         result.getTotalElements());
   }
+
+  @Override
+  public java.util.List<Order> factsAfter(UUID cursor, int limit) {
+    var page = PageRequest.of(0, limit);
+    var values =
+        cursor == null
+            ? records.findAllByOrderByIdAsc(page)
+            : records.findByIdGreaterThanOrderByIdAsc(cursor, page);
+    if (!values.isEmpty()) {
+      records.findByIdIn(values.stream().map(value -> value.id).toList());
+    }
+    return values.stream().map(OrderEntity::domain).toList();
+  }
 }

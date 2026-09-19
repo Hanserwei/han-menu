@@ -31,4 +31,7 @@ public interface OrderRepository {
 
   /** 后台按可选状态分页，组合查询由 ORM Specification 完成. */
   OrderPage management(Order.Status status, int page, int size);
+
+  /** 按标识键集分页导出统计事实，避免集合抓取分页或无界读取. */
+  java.util.List<Order> factsAfter(UUID cursor, int limit);
 }

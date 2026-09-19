@@ -16,4 +16,7 @@ public interface CustomerRepository {
 
   /** 按版本更新顾客. */
   void update(CustomerAccount customer);
+
+  /** 按标识有界导出统计快照. */
+  java.util.List<CustomerAccount> factsAfter(UUID cursor, int limit);
 }

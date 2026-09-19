@@ -65,6 +65,18 @@ public final class TestDatabase implements AutoCloseable {
     registry.add("han-menu.catalog.storage.key-prefix", () -> "han-menu-test/" + schema + "/");
   }
 
+  /** 等待可靠事件及其派生事件完成，避免测试清理或统计采样与后台消费者竞争. */
+  public static void awaitPublications(org.springframework.jdbc.core.simple.JdbcClient jdbc)
+      throws InterruptedException {
+    long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
+    while (jdbc.sql("SELECT count(*) FROM event_publication").query(Long.class).single() != 0) {
+      if (System.nanoTime() >= deadline) {
+        throw new AssertionError("可靠事件未在测试期限内消费完成");
+      }
+      Thread.sleep(10);
+    }
+  }
+
   /** 释放本实例创建的 schema；必须在 Spring 上下文完成关闭之后调用. */
   @Override
   public void close() {

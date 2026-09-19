@@ -11,5 +11,11 @@ interface CustomerRecords extends JpaRepository<CustomerEntity, UUID> {
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<CustomerEntity> findLockedById(UUID id);
 
+  java.util.List<CustomerEntity> findAllByOrderByIdAsc(
+      org.springframework.data.domain.Pageable page);
+
+  java.util.List<CustomerEntity> findByIdGreaterThanOrderByIdAsc(
+      UUID cursor, org.springframework.data.domain.Pageable page);
+
   Optional<CustomerEntity> findByPhone(String phone);
 }

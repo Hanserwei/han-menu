@@ -78,7 +78,7 @@ class OrderController {
 
   /** 仅接受客户端读取到的订单版本. */
   @PostMapping("/{id}/cancellation")
-  @Operation(summary = "取消本人待付款订单")
+  @Operation(summary = "取消本人待付款或待接单订单")
   OrderViews.Detail cancel(
       @AuthenticationPrincipal CustomerIdentity identity,
       @PathVariable UUID id,
@@ -96,6 +96,16 @@ class OrderController {
     return orders.reorder(identity, id, body.version(), body.cartVersion());
   }
 
+  /** 催单在订单事务内登记，重复或冷却期内请求不能重复发消息. */
+  @PostMapping("/{id}/reminders")
+  @Operation(summary = "催促本人已付款且未完成的订单")
+  OrderViews.Detail remind(
+      @AuthenticationPrincipal CustomerIdentity identity,
+      @PathVariable UUID id,
+      @Valid @RequestBody Reminder body) {
+    return lifecycle.remind(identity, id, body.version());
+  }
+
   /** 下单只能选择本人地址和购物车条目，价格由服务端决定. */
   record Submit(
       @NotNull UUID addressId,
@@ -108,4 +118,7 @@ class OrderController {
 
   /** 重新加购同时要求订单和购物车版本，防止重复增加数量. */
   record Reorder(@NotNull @Min(0) Long version, @NotNull @Min(0) Long cartVersion) {}
+
+  /** 催单只接受当前订单版本，不接受消息正文或目标员工. */
+  record Reminder(@NotNull @Min(0) Long version) {}
 }

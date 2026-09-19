@@ -169,4 +169,9 @@ class JpaCatalogRepository implements CatalogRepository {
   public boolean imagePublished(UUID id) {
     return products.existsByImageIdAndOnSaleTrue(id);
   }
+
+  @Override
+  public long countProducts(ProductKind kind, boolean onSale) {
+    return products.countByKindAndOnSale(kind, onSale);
+  }
 }

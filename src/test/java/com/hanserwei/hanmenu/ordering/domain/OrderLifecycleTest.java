@@ -82,6 +82,25 @@ class OrderLifecycleTest {
     assertThat(paid.status()).isEqualTo(Order.Status.CANCELLED);
   }
 
+  @Test
+  void reminderRequiresPaidActiveStateVersionAndCooldown() {
+    var order = order();
+    assertThatThrownBy(() -> order.remind(0, NOW)).isInstanceOf(OrderException.class);
+    UUID payment = UUID.randomUUID();
+    order.attachPayment(payment, 0, NOW);
+    order.paymentSucceeded(payment, order.total(), NOW, NOW);
+    order.remind(0, NOW);
+    assertThatThrownBy(() -> order.remind(1, NOW.plusSeconds(60)))
+        .isInstanceOf(OrderException.class);
+    assertThatThrownBy(() -> order.remind(0, NOW.plusSeconds(59)))
+        .isInstanceOf(OrderException.class);
+    order.remind(0, NOW.plusSeconds(60));
+    assertThat(order.reminderCount()).isEqualTo(2);
+    order.cancel(0, NOW.plusSeconds(61));
+    assertThatThrownBy(() -> order.remind(0, NOW.plusSeconds(121)))
+        .isInstanceOf(OrderException.class);
+  }
+
   private Order order() {
     return Order.submit(
         UUID.randomUUID(),

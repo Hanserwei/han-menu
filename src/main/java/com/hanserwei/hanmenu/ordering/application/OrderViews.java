@@ -65,7 +65,9 @@ public final class OrderViews {
                 ? null
                 : order.lifecycle().cancelReason().name(),
             order.lifecycle().refundStatus().name(),
-            order.lifecycle().refundId()));
+            order.lifecycle().refundId()),
+        order.reminderCount(),
+        order.lastRemindedAt());
   }
 
   /** 映射有界历史查询，稳定排序由仓储完成. */
@@ -101,7 +103,9 @@ public final class OrderViews {
       BigDecimal total,
       String currency,
       Instant expiresAt,
-      Lifecycle lifecycle) {
+      Lifecycle lifecycle,
+      int reminderCount,
+      Instant lastRemindedAt) {
     /** 固定条目列表. */
     public Detail {
       items = List.copyOf(items);

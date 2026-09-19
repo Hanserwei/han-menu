@@ -94,6 +94,18 @@ class ApplicationInfrastructureIt {
             "ordering_order",
             "ordering_line",
             "payment_intent",
-            "payment_refund");
+            "payment_refund",
+            "notification_feed",
+            "notification_notice",
+            "notification_attempt",
+            "notification_receipt",
+            "notification_ticket",
+            "reporting_projection",
+            "reporting_order",
+            "reporting_line",
+            "reporting_product",
+            "reporting_customer",
+            "reporting_receipt",
+            "reporting_refund");
   }
 }

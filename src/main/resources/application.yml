@@ -67,6 +67,13 @@ management:
     health:
       show-details: never
 han-menu:
+  events:
+    recovery-enabled: ${EVENT_RECOVERY_ENABLED:true}
+  notification:
+    scheduling-enabled: ${NOTIFICATION_SCHEDULING_ENABLED:true}
+    allowed-origins: ${NOTIFICATION_ALLOWED_ORIGINS:}
+  reporting:
+    bootstrap-enabled: ${REPORTING_BOOTSTRAP_ENABLED:true}
   payment:
     scheduling-enabled: ${PAYMENT_SCHEDULING_ENABLED:true}
     alipay:

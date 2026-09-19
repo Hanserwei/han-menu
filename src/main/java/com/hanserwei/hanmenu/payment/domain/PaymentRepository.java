@@ -45,4 +45,10 @@ public interface PaymentRepository {
 
   /** 按到期时间取得有界待处理退款标识. */
   List<UUID> dueRefunds(Instant now, int limit);
+
+  /** 分批导出已确认支付，统计模块不得直接查询支付表. */
+  List<Payment> receiptsAfter(UUID cursor, int limit);
+
+  /** 分批导出已确认退款. */
+  List<Refund> refundsAfter(UUID cursor, int limit);
 }

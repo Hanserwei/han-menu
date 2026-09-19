@@ -9,6 +9,12 @@ spring:
       # 测试由用例显式触发事件恢复，避免启动时隐式重投干扰断言。
       republish-outstanding-events-on-restart: false
 han-menu:
+  events:
+    recovery-enabled: false
+  notification:
+    scheduling-enabled: false
+  reporting:
+    bootstrap-enabled: false
   payment:
     scheduling-enabled: false
   identity:

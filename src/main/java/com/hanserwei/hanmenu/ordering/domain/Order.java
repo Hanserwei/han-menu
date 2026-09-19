@@ -27,6 +27,8 @@ public final class Order {
   private CancelReason cancelReason;
   private RefundStatus refundStatus;
   private UUID refundId;
+  private int reminderCount;
+  private Instant lastRemindedAt;
 
   /** 重建持久化快照并核对状态、金额及时间的一致性. */
   public Order(
@@ -40,7 +42,9 @@ public final class Order {
       long version,
       Instant createdAt,
       Instant cancelledAt,
-      Lifecycle lifecycle) {
+      Lifecycle lifecycle,
+      int reminderCount,
+      Instant lastRemindedAt) {
     this.id = Objects.requireNonNull(id);
     this.customerId = Objects.requireNonNull(customerId);
     this.idempotencyKey = Objects.requireNonNull(idempotencyKey);
@@ -59,6 +63,11 @@ public final class Order {
     this.cancelReason = lifecycle.cancelReason();
     this.refundStatus = Objects.requireNonNull(lifecycle.refundStatus());
     this.refundId = lifecycle.refundId();
+    this.reminderCount = reminderCount;
+    this.lastRemindedAt = lastRemindedAt;
+    if (reminderCount < 0 || (reminderCount == 0) != (lastRemindedAt == null)) {
+      throw new IllegalArgumentException("催单快照不合法");
+    }
     if (lines.isEmpty()
         || lines.size() > 50
         || version < 0
@@ -90,7 +99,9 @@ public final class Order {
         0,
         now,
         null,
-        new Lifecycle(null, null, null, null, null, null, RefundStatus.NONE, null));
+        new Lifecycle(null, null, null, null, null, null, RefundStatus.NONE, null),
+        0,
+        null);
   }
 
   /** 校验客户端版本，拒绝陈旧修改. */
@@ -314,6 +325,29 @@ public final class Order {
       CancelReason cancelReason,
       RefundStatus refundStatus,
       UUID refundId) {}
+
+  /** 仅允许已付款、已接单或配送中的订单催单，两次成功催单至少间隔六十秒. */
+  public void remind(long expectedVersion, Instant now) {
+    requireVersion(expectedVersion);
+    if (status != Status.PAID && status != Status.ACCEPTED && status != Status.DELIVERING) {
+      conflict("当前订单不能催单");
+    }
+    if (lastRemindedAt != null && now.isBefore(lastRemindedAt.plusSeconds(60))) {
+      conflict("两次催单至少间隔六十秒");
+    }
+    reminderCount = Math.incrementExact(reminderCount);
+    lastRemindedAt = Objects.requireNonNull(now);
+  }
+
+  /** 返回已成功登记的催单次数. */
+  public int reminderCount() {
+    return reminderCount;
+  }
+
+  /** 返回上次成功催单的 UTC 时间. */
+  public Instant lastRemindedAt() {
+    return lastRemindedAt;
+  }
 
   /** 返回订单标识. */
   public UUID id() {

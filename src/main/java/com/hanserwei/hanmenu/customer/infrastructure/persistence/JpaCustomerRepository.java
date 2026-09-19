@@ -50,4 +50,14 @@ class JpaCustomerRepository implements CustomerRepository {
     entity.apply(customer);
     records.flush();
   }
+
+  @Override
+  @Transactional(readOnly = true)
+  public java.util.List<CustomerAccount> factsAfter(UUID cursor, int limit) {
+    var page = org.springframework.data.domain.PageRequest.of(0, limit);
+    return (cursor == null
+            ? records.findAllByOrderByIdAsc(page)
+            : records.findByIdGreaterThanOrderByIdAsc(cursor, page))
+        .stream().map(CustomerEntity::domain).toList();
+  }
 }

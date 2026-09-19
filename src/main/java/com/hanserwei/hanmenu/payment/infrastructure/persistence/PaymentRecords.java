@@ -20,4 +20,10 @@ interface PaymentRecords extends JpaRepository<PaymentEntity, UUID> {
 
   List<PaymentEntity> findByNextAttemptAtLessThanEqualOrderByNextAttemptAtAscIdAsc(
       Instant now, Pageable pageable);
+
+  List<PaymentEntity> findByStatusOrderByIdAsc(
+      com.hanserwei.hanmenu.payment.domain.Payment.Status status, Pageable page);
+
+  List<PaymentEntity> findByStatusAndIdGreaterThanOrderByIdAsc(
+      com.hanserwei.hanmenu.payment.domain.Payment.Status status, UUID cursor, Pageable page);
 }

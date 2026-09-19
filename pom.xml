@@ -22,6 +22,7 @@
     <checkstyle.version>14.1.0</checkstyle.version>
     <springdoc.version>3.1.1</springdoc.version>
     <guava.version>33.7.1-jre</guava.version>
+    <poi.version>5.5.1</poi.version>
     <alipay-sdk.version>4.40.996.ALL</alipay-sdk.version>
     <aws-sdk.version>2.55.0</aws-sdk.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -46,6 +47,15 @@
     </dependencies>
   </dependencyManagement>
   <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-websocket</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>${poi.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.alipay.sdk</groupId>
       <artifactId>alipay-sdk-java</artifactId>

@@ -21,4 +21,6 @@ interface ProductRecords
 
   @EntityGraph(attributePaths = "components")
   List<ProductEntity> findByIdIn(List<UUID> ids);
+
+  long countByKindAndOnSale(com.hanserwei.hanmenu.catalog.domain.ProductKind kind, boolean onSale);
 }

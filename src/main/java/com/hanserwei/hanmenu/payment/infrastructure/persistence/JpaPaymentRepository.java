@@ -114,4 +114,24 @@ class JpaPaymentRepository implements PaymentRepository {
         .map(value -> value.id)
         .toList();
   }
+
+  @Override
+  public List<Payment> receiptsAfter(UUID cursor, int limit) {
+    var page = PageRequest.of(0, limit);
+    return (cursor == null
+            ? payments.findByStatusOrderByIdAsc(Payment.Status.SUCCEEDED, page)
+            : payments.findByStatusAndIdGreaterThanOrderByIdAsc(
+                Payment.Status.SUCCEEDED, cursor, page))
+        .stream().map(PaymentEntity::domain).toList();
+  }
+
+  @Override
+  public List<Refund> refundsAfter(UUID cursor, int limit) {
+    var page = PageRequest.of(0, limit);
+    return (cursor == null
+            ? refunds.findByStatusOrderByIdAsc(Refund.Status.SUCCEEDED, page)
+            : refunds.findByStatusAndIdGreaterThanOrderByIdAsc(
+                Refund.Status.SUCCEEDED, cursor, page))
+        .stream().map(RefundEntity::domain).toList();
+  }
 }
