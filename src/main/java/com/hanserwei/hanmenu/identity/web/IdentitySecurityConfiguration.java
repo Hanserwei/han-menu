@@ -78,6 +78,15 @@ class IdentitySecurityConfiguration {
                         "/api/v1/shop",
                         "/api/v1/shop/**")
                     .hasRole("ADMIN")
+                    .requestMatchers(
+                        "/api/v1/management/customers",
+                        "/api/v1/management/customers/**",
+                        "/api/v1/management/payments",
+                        "/api/v1/management/payments/**",
+                        "/api/v1/management/refunds",
+                        "/api/v1/management/refunds/**",
+                        "/api/v1/management/audit-events")
+                    .hasRole("ADMIN")
                     .requestMatchers("/api/v1/management/orders", "/api/v1/management/orders/**")
                     .hasAnyRole("ADMIN", "STAFF")
                     .requestMatchers(

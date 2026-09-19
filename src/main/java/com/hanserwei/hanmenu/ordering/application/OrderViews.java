@@ -91,7 +91,7 @@ public final class OrderViews {
         Math.ceilDiv(page.totalElements(), size));
   }
 
-  /** 订单详情仅向所属顾客返回收货资料. */
+  /** 订单详情在顾客归属或员工授权校验后返回收货资料. */
   public record Detail(
       UUID id,
       String status,

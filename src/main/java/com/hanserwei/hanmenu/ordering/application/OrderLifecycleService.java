@@ -7,6 +7,7 @@ import com.hanserwei.hanmenu.identity.api.StaffIdentity;
 import com.hanserwei.hanmenu.ordering.domain.Order;
 import com.hanserwei.hanmenu.ordering.domain.OrderException;
 import com.hanserwei.hanmenu.ordering.domain.OrderRepository;
+import com.hanserwei.hanmenu.ordering.domain.OrderSearch;
 import com.hanserwei.hanmenu.payment.api.PaymentOperations;
 import com.hanserwei.hanmenu.payment.events.PaymentResult;
 import com.hanserwei.hanmenu.payment.events.RefundResult;
@@ -95,14 +96,11 @@ public class OrderLifecycleService {
     return OrderViews.detail(orders.find(id).orElseThrow());
   }
 
-  /** 后台只提供授权后的有界状态列表. */
+  /** 后台提供授权后的组合检索，计数与分页均在数据库执行. */
   @Transactional(readOnly = true)
-  public OrderViews.History history(StaffIdentity actor, Order.Status status, int page, int size) {
+  public OrderViews.History history(StaffIdentity actor, OrderSearch search) {
     staff.requireStaff(actor);
-    if (page < 0 || page > 10000 || size < 1 || size > 50) {
-      throw new OrderException(OrderException.Reason.INVALID_INPUT, "分页参数不合法");
-    }
-    return OrderViews.history(orders.management(status, page, size), page, size);
+    return OrderViews.history(orders.management(search), search.page(), search.size());
   }
 
   /** 员工读取履约所需收货快照. */

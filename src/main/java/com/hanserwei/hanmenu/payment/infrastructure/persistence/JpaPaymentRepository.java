@@ -4,11 +4,17 @@ import com.hanserwei.hanmenu.payment.domain.Payment;
 import com.hanserwei.hanmenu.payment.domain.PaymentException;
 import com.hanserwei.hanmenu.payment.domain.PaymentRepository;
 import com.hanserwei.hanmenu.payment.domain.Refund;
+import com.hanserwei.hanmenu.payment.domain.TransactionPage;
+import com.hanserwei.hanmenu.payment.domain.TransactionSearch;
+import jakarta.persistence.criteria.Predicate;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
@@ -113,6 +119,78 @@ class JpaPaymentRepository implements PaymentRepository {
         .stream()
         .map(value -> value.id)
         .toList();
+  }
+
+  @Override
+  public TransactionPage<Payment> searchPayments(Payment.Status status, TransactionSearch search) {
+    Specification<PaymentEntity> filters =
+        (root, query, builder) -> {
+          var predicates = new ArrayList<Predicate>();
+          if (status != null) {
+            predicates.add(builder.equal(root.get("status"), status));
+          }
+          if (search.orderId() != null) {
+            predicates.add(builder.equal(root.get("businessRef"), search.orderId()));
+          }
+          if (search.customerId() != null) {
+            predicates.add(builder.equal(root.get("customerId"), search.customerId()));
+          }
+          if (search.paymentId() != null) {
+            predicates.add(builder.equal(root.get("id"), search.paymentId()));
+          }
+          if (search.from() != null) {
+            predicates.add(builder.greaterThanOrEqualTo(root.get("createdAt"), search.from()));
+          }
+          if (search.to() != null) {
+            predicates.add(builder.lessThan(root.get("createdAt"), search.to()));
+          }
+          return builder.and(predicates.toArray(Predicate[]::new));
+        };
+    var result =
+        payments.findAll(
+            filters,
+            PageRequest.of(
+                search.page(),
+                search.size(),
+                Sort.by("createdAt").descending().and(Sort.by("id").descending())));
+    return new TransactionPage<>(
+        result.stream().map(PaymentEntity::domain).toList(), result.getTotalElements());
+  }
+
+  @Override
+  public TransactionPage<Refund> searchRefunds(Refund.Status status, TransactionSearch search) {
+    Specification<RefundEntity> filters =
+        (root, query, builder) -> {
+          var predicates = new ArrayList<Predicate>();
+          if (status != null) {
+            predicates.add(builder.equal(root.get("status"), status));
+          }
+          if (search.orderId() != null) {
+            predicates.add(builder.equal(root.get("businessRef"), search.orderId()));
+          }
+          if (search.customerId() != null) {
+            predicates.add(builder.equal(root.get("customerId"), search.customerId()));
+          }
+          if (search.paymentId() != null) {
+            predicates.add(builder.equal(root.get("paymentId"), search.paymentId()));
+          }
+          if (search.from() != null) {
+            predicates.add(builder.greaterThanOrEqualTo(root.get("createdAt"), search.from()));
+          }
+          if (search.to() != null) {
+            predicates.add(builder.lessThan(root.get("createdAt"), search.to()));
+          }
+          return builder.and(predicates.toArray(Predicate[]::new));
+        };
+    var result =
+        refunds.findAll(
+            filters,
+            PageRequest.of(
+                search.page(),
+                search.size(),
+                Sort.by("createdAt").descending().and(Sort.by("id").descending())));
+    return new TransactionPage<>(
+        result.stream().map(RefundEntity::domain).toList(), result.getTotalElements());
   }
 
   @Override

@@ -76,7 +76,8 @@ identity、catalog、shop、customer、cart、ordering、payment、notification�
 
 参考项目仅提供业务输入。本系统没有旧账号导入、旧 API 适配层或演示表。
 项目数据库为 `han_menu`、`han_menu_test`，与 `pg18_lab` 等其他数据库分开管理。
-当前提供员工、顾客、地址、购物车、商品、门店、支付、订单履约、通知及经营报表接口。App 真机 SDK 联调随 P7 Flutter 工程推进。
+当前提供员工、顾客、地址、购物车、商品、门店、支付、订单履约、通知及经营报表接口。
+管理端新增组合订单检索、顾客启停用、资金流水和安全审计查询，见 [管理端前置接口契约](docs/P7_BACKEND_CONTRACT.md)。App 真机 SDK 联调随 P7 Flutter 工程推进。
 
 ## 开发与验证
 

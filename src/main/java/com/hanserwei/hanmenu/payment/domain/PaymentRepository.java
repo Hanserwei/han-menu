@@ -46,6 +46,12 @@ public interface PaymentRepository {
   /** 按到期时间取得有界待处理退款标识. */
   List<UUID> dueRefunds(Instant now, int limit);
 
+  /** 按管理员组合条件分页查询所有支付状态，不发送渠道请求. */
+  TransactionPage<Payment> searchPayments(Payment.Status status, TransactionSearch search);
+
+  /** 按管理员组合条件分页查询退款，和支付查询使用相同业务引用语义. */
+  TransactionPage<Refund> searchRefunds(Refund.Status status, TransactionSearch search);
+
   /** 分批导出已确认支付，统计模块不得直接查询支付表. */
   List<Payment> receiptsAfter(UUID cursor, int limit);
 

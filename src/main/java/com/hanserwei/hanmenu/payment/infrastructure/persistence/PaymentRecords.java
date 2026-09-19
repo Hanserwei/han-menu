@@ -10,7 +10,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 
 /** Payment 的有界派生查询和事务行锁. */
-interface PaymentRecords extends JpaRepository<PaymentEntity, UUID> {
+interface PaymentRecords
+    extends JpaRepository<PaymentEntity, UUID>,
+        org.springframework.data.jpa.repository.JpaSpecificationExecutor<PaymentEntity> {
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<PaymentEntity> findLockedById(UUID id);
 

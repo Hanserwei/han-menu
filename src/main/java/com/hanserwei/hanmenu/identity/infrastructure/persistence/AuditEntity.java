@@ -1,5 +1,6 @@
 package com.hanserwei.hanmenu.identity.infrastructure.persistence;
 
+import com.hanserwei.hanmenu.identity.domain.AuditQuery;
 import com.hanserwei.hanmenu.identity.domain.AuditTrail;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -47,5 +48,10 @@ public class AuditEntity {
     this.subjectId = subjectId;
     this.successful = successful;
     this.occurredAt = occurredAt;
+  }
+
+  /** 仅映射固定审计字段，不附加员工或顾客个人资料. */
+  AuditQuery.Entry entry() {
+    return new AuditQuery.Entry(id, action, actorId, subjectId, successful, occurredAt);
   }
 }

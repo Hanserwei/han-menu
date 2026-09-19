@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 
 /** 顾客账号派生查询，避免手写 SQL. */
-interface CustomerRecords extends JpaRepository<CustomerEntity, UUID> {
+interface CustomerRecords
+    extends JpaRepository<CustomerEntity, UUID>,
+        org.springframework.data.jpa.repository.JpaSpecificationExecutor<CustomerEntity> {
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<CustomerEntity> findLockedById(UUID id);
 

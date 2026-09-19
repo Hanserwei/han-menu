@@ -156,3 +156,12 @@ ordering 通过 customer/shop/catalog/cart 的公开契约参与同一本地事�
 REPEATABLE_READ 事务中分批重建，控制行锁协调新事件，MVCC 保留旧代际给读者；失败全量回滚。
 营业额、收退款、完成率群组和注册增长使用独立明确口径，XLSX 与 JSON 共享同一快照。
 应用级事件恢复独立于支付轮询开关，完整协议见 [P6 契约](P6_CONTRACT.md)。
+
+
+## 管理端前置能力
+
+P7 前置补充通过本模块 JPA Specification 提供订单组合检索、管理员顾客档案、支付／退款流水及
+身份安全审计查询。customer 与 payment 仅增加 identity::api 依赖；payment 仍不依赖 ordering。
+顾客启停用通过聚合行为推进安全版本，并通过 StaffAudit 公开端口在同一事务登记固定审计事件。
+管理端 DTO 使用独立 OpenAPI 模型名称，避免与顾客端同名响应混淆，详细契约见
+[P7 后端补齐](P7_BACKEND_CONTRACT.md)。

@@ -17,6 +17,12 @@ public interface CustomerRepository {
   /** 按版本更新顾客. */
   void update(CustomerAccount customer);
 
+  /** 锁定顾客账号，和下单、地址及启停用用例共用同一行锁. */
+  CustomerAccount lock(UUID id);
+
+  /** 在本模块表中执行组合条件分页. */
+  CustomerPage search(CustomerSearch search);
+
   /** 按标识有界导出统计快照. */
   java.util.List<CustomerAccount> factsAfter(UUID cursor, int limit);
 }

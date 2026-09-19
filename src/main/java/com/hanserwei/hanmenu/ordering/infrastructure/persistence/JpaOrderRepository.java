@@ -1,12 +1,18 @@
 package com.hanserwei.hanmenu.ordering.infrastructure.persistence;
 
 import com.hanserwei.hanmenu.ordering.domain.Order;
+import com.hanserwei.hanmenu.ordering.domain.OrderException;
 import com.hanserwei.hanmenu.ordering.domain.OrderPage;
 import com.hanserwei.hanmenu.ordering.domain.OrderRepository;
+import com.hanserwei.hanmenu.ordering.domain.OrderSearch;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
@@ -63,10 +69,7 @@ class JpaOrderRepository implements OrderRepository {
   public Order lock(UUID id) {
     return records
         .findLockedById(id)
-        .orElseThrow(
-            () ->
-                new com.hanserwei.hanmenu.ordering.domain.OrderException(
-                    com.hanserwei.hanmenu.ordering.domain.OrderException.Reason.NOT_FOUND, "订单不存在"))
+        .orElseThrow(() -> new OrderException(OrderException.Reason.NOT_FOUND, "订单不存在"))
         .domain();
   }
 
@@ -76,7 +79,7 @@ class JpaOrderRepository implements OrderRepository {
   }
 
   @Override
-  public java.util.List<UUID> expired(java.time.Instant before, int limit) {
+  public List<UUID> expired(java.time.Instant before, int limit) {
     return records
         .findByStatusAndCreatedAtLessThanEqualOrderByCreatedAtAscIdAsc(
             Order.Status.UNPAID, before, PageRequest.of(0, limit))
@@ -86,10 +89,30 @@ class JpaOrderRepository implements OrderRepository {
   }
 
   @Override
-  public OrderPage management(Order.Status status, int page, int size) {
-    org.springframework.data.jpa.domain.Specification<OrderEntity> filters =
-        (root, query, builder) ->
-            status == null ? builder.conjunction() : builder.equal(root.get("status"), status);
+  public OrderPage management(OrderSearch search) {
+    Specification<OrderEntity> filters =
+        (root, query, builder) -> {
+          var predicates = new ArrayList<Predicate>();
+          if (search.status() != null) {
+            predicates.add(builder.equal(root.get("status"), search.status()));
+          }
+          if (search.orderId() != null) {
+            predicates.add(builder.equal(root.get("id"), search.orderId()));
+          }
+          if (search.customerId() != null) {
+            predicates.add(builder.equal(root.get("customerId"), search.customerId()));
+          }
+          if (search.phone() != null) {
+            predicates.add(builder.equal(root.get("address").get("phone"), search.phone()));
+          }
+          if (search.from() != null) {
+            predicates.add(builder.greaterThanOrEqualTo(root.get("createdAt"), search.from()));
+          }
+          if (search.to() != null) {
+            predicates.add(builder.lessThan(root.get("createdAt"), search.to()));
+          }
+          return builder.and(predicates.toArray(Predicate[]::new));
+        };
     var result =
         records.findBy(
             filters,
@@ -98,8 +121,8 @@ class JpaOrderRepository implements OrderRepository {
                     .as(OrderSummaryValue.class)
                     .page(
                         PageRequest.of(
-                            page,
-                            size,
+                            search.page(),
+                            search.size(),
                             Sort.by("createdAt").descending().and(Sort.by("id").descending()))));
     return new OrderPage(
         result.getContent().stream().map(OrderSummaryValue::domain).toList(),
@@ -107,7 +130,7 @@ class JpaOrderRepository implements OrderRepository {
   }
 
   @Override
-  public java.util.List<Order> factsAfter(UUID cursor, int limit) {
+  public List<Order> factsAfter(UUID cursor, int limit) {
     var page = PageRequest.of(0, limit);
     var values =
         cursor == null

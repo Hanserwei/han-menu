@@ -10,7 +10,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 
 /** Refund 的有界派生查询和事务行锁. */
-interface RefundRecords extends JpaRepository<RefundEntity, UUID> {
+interface RefundRecords
+    extends JpaRepository<RefundEntity, UUID>,
+        org.springframework.data.jpa.repository.JpaSpecificationExecutor<RefundEntity> {
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<RefundEntity> findLockedById(UUID id);
 

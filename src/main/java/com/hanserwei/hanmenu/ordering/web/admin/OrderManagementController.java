@@ -4,12 +4,14 @@ import com.hanserwei.hanmenu.identity.api.StaffIdentity;
 import com.hanserwei.hanmenu.ordering.application.OrderLifecycleService;
 import com.hanserwei.hanmenu.ordering.application.OrderViews;
 import com.hanserwei.hanmenu.ordering.domain.Order;
+import com.hanserwei.hanmenu.ordering.domain.OrderSearch;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,15 +33,21 @@ class OrderManagementController {
     this.lifecycle = lifecycle;
   }
 
-  /** 按可选状态分页读取订单，响应摘要不包含地址. */
+  /** 按订单标识、顾客、收货手机号和创建时间组合检索，响应摘要不包含地址. */
   @GetMapping
   @Operation(summary = "分页查询待处理或历史订单")
   OrderViews.History history(
       @AuthenticationPrincipal StaffIdentity identity,
       @RequestParam(required = false) Order.Status status,
+      @RequestParam(required = false) UUID orderId,
+      @RequestParam(required = false) UUID customerId,
+      @RequestParam(required = false) String phone,
+      @RequestParam(required = false) Instant from,
+      @RequestParam(required = false) Instant to,
       @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int page,
       @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size) {
-    return lifecycle.history(identity, status, page, size);
+    return lifecycle.history(
+        identity, new OrderSearch(status, orderId, customerId, phone, from, to, page, size));
   }
 
   /** 读取收货与商品快照供当前授权员工履约. */
