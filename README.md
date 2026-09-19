@@ -97,3 +97,8 @@ identity、catalog、shop、customer、cart、ordering、payment、notification�
 
 集成测试使用随机 PostgreSQL schema 与 Redis 测试前缀，完成后清理。ORM 测试额外验证并发
 EntityManager 的乐观锁、单查询认证，以及业务更新和持久化事件登记的原子回滚。
+
+## PC 管理端
+
+PC-1 已建立独立 [admin/ 工程](admin/README.md)，实现主题布局、员工认证与权限基础。
+阶段边界见 [PC-1 契约](docs/PC1_CONTRACT.md)，根 `scripts/verify.sh` 统一执行前后端门禁。

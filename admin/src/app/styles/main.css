@@ -1,0 +1,534 @@
+/* 应用级布局参数来自已确认的温润经营台设计；组件内部主题统一由 ConfigProvider 管理。 */
+:root {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans CJK SC',
+    'Microsoft YaHei', sans-serif;
+  color: #202820;
+  background: #f7f7f2;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --sidebar: 208px;
+  --header: 64px;
+  --primary: #265e49;
+  --muted: #5f6b63;
+  --line: #e1e6df;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input {
+  font: inherit;
+}
+a {
+  color: var(--primary);
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+h1 {
+  margin-bottom: 8px;
+  font-size: 28px;
+  line-height: 40px;
+  font-weight: 600;
+}
+h2 {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+h3 {
+  font-size: 16px;
+  line-height: 24px;
+}
+p {
+  line-height: 1.7;
+}
+.muted {
+  color: var(--muted);
+}
+.wordmark {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  color: #173e30;
+  white-space: nowrap;
+}
+.eyebrow {
+  font-size: 13px;
+  color: var(--primary);
+  letter-spacing: 0.12em;
+}
+.app-shell {
+  min-height: 100dvh;
+}
+.app-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--sidebar);
+  background: #edf1e9;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  z-index: 30;
+}
+.brand-link {
+  padding: 20px 24px 24px;
+  text-decoration: none;
+  color: var(--muted);
+}
+.brand-link > span {
+  font-size: 12px;
+}
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px;
+}
+.sidebar-nav .ant-menu {
+  border-inline-end: 0 !important;
+}
+.sidebar-nav .ant-menu-item-group-title {
+  margin-top: 20px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.sidebar-nav .ant-menu-item-selected {
+  border-left: 3px solid var(--primary);
+}
+.sidebar-nav .ant-menu-item-disabled {
+  opacity: 0.67;
+}
+.sidebar-nav .ant-menu-item-divider {
+  margin: 24px 14px;
+}
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: #202820;
+  width: 100%;
+}
+.sidebar-profile .ant-avatar {
+  background: #265e49;
+  color: white;
+  flex: none;
+}
+.profile-text {
+  flex: 1;
+  min-width: 0;
+}
+.profile-text strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-text small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.app-main {
+  margin-left: var(--sidebar);
+}
+.app-header {
+  height: var(--header);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 28px;
+}
+.header-location,
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+.header-location {
+  min-width: 0;
+}
+.breadcrumb-group {
+  color: var(--muted);
+}
+.breadcrumb-separator {
+  color: #9da69e;
+  margin: 0 4px;
+}
+.store-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+.header-actions .ant-tag {
+  margin: 0;
+}
+.page-content {
+  padding: 32px;
+  max-width: 1664px;
+  margin: 0 auto;
+  min-height: calc(100dvh - var(--header));
+}
+.page-heading {
+  margin-bottom: 32px;
+}
+.page-heading p {
+  margin-bottom: 0;
+}
+.heading-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.metrics-band {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  background: white;
+  padding: 24px 0;
+  border-block: 1px solid var(--line);
+}
+.metric {
+  padding: 0 24px;
+  border-right: 1px solid var(--line);
+}
+.metric:last-child {
+  border-right: 0;
+}
+.metric > span {
+  display: block;
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.metric strong {
+  color: var(--primary);
+  font-size: 36px;
+  line-height: 44px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.metric strong.pending {
+  color: #986511;
+}
+.workspace-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  background: #fff;
+  min-height: 460px;
+}
+.surface-section {
+  background: #fff;
+  padding: 32px 24px;
+}
+.today-section {
+  border-right: 1px solid var(--line);
+}
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.section-title > .anticon {
+  font-size: 20px;
+  color: var(--muted);
+}
+.today-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 24px 0 32px;
+  border-bottom: 1px solid var(--line);
+}
+.today-metrics span {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.today-metrics strong {
+  color: var(--primary);
+  font-size: 36px;
+  font-weight: 600;
+}
+.workspace-note {
+  margin-top: 40px;
+}
+.workspace-note p {
+  color: var(--muted);
+  margin: 0 0 4px;
+}
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  border-bottom: 1px solid var(--line);
+}
+.summary-line > span {
+  color: var(--muted);
+}
+.summary-line i {
+  display: inline-block;
+  height: 14px;
+  border-left: 1px solid #c9d1ca;
+  margin: 0 12px;
+  vertical-align: middle;
+}
+.store-caption {
+  margin-top: 32px;
+  font-size: 13px;
+}
+.data-timestamp {
+  margin: 24px 0 0;
+  text-align: right;
+  color: var(--muted);
+  font-size: 12px;
+}
+.is-collapsed {
+  --sidebar: 72px;
+}
+.is-collapsed .brand-link {
+  padding: 20px 12px 24px;
+}
+.is-collapsed .wordmark {
+  font-size: 20px;
+}
+.is-collapsed .sidebar-profile {
+  padding: 20px 18px;
+}
+.is-collapsed .sidebar-nav {
+  padding: 0;
+}
+.is-mobile {
+  --sidebar: 0px;
+}
+.account-profile {
+  margin-bottom: 24px;
+}
+.password-section {
+  max-width: 640px;
+}
+.password-section form {
+  max-width: 420px;
+  margin-top: 24px;
+}
+.uuid {
+  word-break: break-all;
+}
+.problem-alert {
+  margin-bottom: 20px;
+}
+.problem-alert details {
+  margin-top: 8px;
+}
+.problem-alert code {
+  word-break: break-all;
+}
+.login-page {
+  display: grid;
+  grid-template-columns: minmax(380px, 42%) 1fr;
+  min-height: 100dvh;
+  background: #fdfefb;
+}
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  padding: 48px 56px;
+  background: #edf1e9;
+  border-right: 1px solid var(--line);
+}
+.login-brand > p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.login-intro {
+  margin: auto 0;
+  padding: 80px 0;
+}
+.login-intro h1 {
+  font-size: 42px;
+  line-height: 1.5;
+  margin: 24px 0;
+  color: #1f503c;
+}
+.login-intro p {
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.9;
+}
+.brand-caption {
+  font-size: 12px;
+  color: var(--muted);
+}
+.login-content {
+  display: flex;
+  flex-direction: column;
+  padding: 48px;
+}
+.login-form-wrap {
+  width: min(100%, 400px);
+  margin: auto;
+  padding: 48px 0;
+}
+.login-form-wrap h2 {
+  font-size: 28px;
+  line-height: 40px;
+  margin: 12px 0;
+}
+.login-form-wrap > .muted {
+  margin-bottom: 32px;
+}
+.login-form-wrap .ant-form-item {
+  margin-bottom: 24px;
+}
+.login-form-wrap .ant-btn-primary {
+  margin-top: 8px;
+}
+.login-security {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 24px;
+}
+.form-notice {
+  margin-bottom: 20px;
+}
+.login-content footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+.login-content footer span {
+  margin-left: 12px;
+}
+@media (max-width: 1359px) {
+  .page-content {
+    padding: 24px;
+  }
+  .metric {
+    padding: 0 16px;
+  }
+  .app-header {
+    padding-inline: 20px;
+  }
+}
+@media (max-width: 1023px) {
+  .store-name,
+  .breadcrumb-group,
+  .breadcrumb-separator {
+    display: none;
+  }
+  .header-actions {
+    gap: 4px;
+  }
+  .app-header {
+    padding-inline: 12px;
+  }
+  .workspace-columns {
+    grid-template-columns: 1fr;
+  }
+  .today-section {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .metrics-band {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px 0;
+  }
+  .login-brand {
+    padding: 36px;
+  }
+  .login-intro h1 {
+    font-size: 34px;
+  }
+}
+@media (max-width: 700px) {
+  .page-content {
+    padding: 20px 16px;
+  }
+  .metrics-band {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .heading-inline {
+    align-items: flex-start;
+  }
+  .heading-inline .ant-btn {
+    margin-top: 4px;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+  .login-brand {
+    padding: 24px;
+    border: 0;
+  }
+  .login-intro,
+  .brand-caption {
+    display: none;
+  }
+  .login-content {
+    padding: 24px;
+  }
+  .login-form-wrap {
+    padding: 16px 0 48px;
+  }
+  .quick-logout {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
+}
+
+/* 首个菜单组直接衔接品牌区，后续分组保留业务层级间距。 */
+.sidebar-nav .ant-menu-item-group:first-child .ant-menu-item-group-title {
+  margin-top: 0;
+}
+
+/* 路由完成身份恢复前保留可访问加载说明，避免慢网络时出现空白屏。 */
+.app-bootstrap {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 14px;
+}

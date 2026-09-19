@@ -1,0 +1,6 @@
+# vue-demi 安装脚本仅切换当前 Vue 3 适配，已核对其内容。
+allowBuilds:
+  vue-demi: true
+minimumReleaseAgeExclude:
+  - '@types/node@24.13.6'
+  - eslint@10.11.0

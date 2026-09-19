@@ -61,6 +61,14 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: admin/.node-version
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: admin/package.json
+      - run: pnpm --dir admin install --frozen-lockfile
+      - run: pnpm --dir admin exec playwright install --with-deps chromium
       - run: ./scripts/verify.sh
       - uses: actions/upload-artifact@v7.0.1
         if: always()
@@ -71,3 +79,4 @@ jobs:
             target/surefire-reports/
             target/failsafe-reports/
             target/spring-modulith-docs/
+            admin/test-results/

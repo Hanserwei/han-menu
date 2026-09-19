@@ -11,7 +11,7 @@
 - P1 包含身份认证、员工权限、全新资源 API、ORM 持久化、审计及接口文档。
 - P1—P6 后端已实现；P4/P5/P6 契约分别见 `docs/P4_CONTRACT.md`、`docs/P5_CONTRACT.md`、`docs/P6_CONTRACT.md`。
 - P7 管理端前置接口补充见 `docs/P7_BACKEND_CONTRACT.md`；顾客管理、支付／退款及安全审计查询仅允许当前管理员，订单履约允许员工。
-- P7 客户端与交付仍按用户指令推进，不提前创建 Flutter 或管理端工程；PC 采用 Vue 3 + TypeScript + antdv-next，Flutter 环境准备暂缓。
+- PC-1 管理端工程位于 `admin/`，采用 Vue 3 + TypeScript + antdv-next + pnpm，细节见 `admin/AGENTS.md` 与 `docs/PC1_CONTRACT.md`；Flutter 环境准备暂缓。
 - 顾客与员工使用独立会话及安全链；购物车仅通过 customer/catalog 的公开 API 访问业务能力；订单通过 customer/shop/catalog/cart 的公开 API 结算，并通过 payment 的公开 API 和结果事件协作；payment 不反向依赖 ordering。
 - 通知通过公开订单事件持久化，WebSocket 使用一次性票据并复验员工会话；统计仅使用公开事件/API 建立可重建投影。
 - 使用 JDK 25 和已提交的 Maven Wrapper，一个工程构建一个可执行 JAR。

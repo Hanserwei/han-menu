@@ -1,0 +1,134 @@
+{
+  "name": "han-menu-admin-sage",
+  "version": 1,
+  "description": "第三套视觉方向的设计参数；antdvTheme 可用于 ConfigProvider.theme，其余字段是应用布局和语义色规范，不直接传给组件库。",
+  "antdvTheme": {
+    "token": {
+      "colorPrimary": "#265E49",
+      "colorInfo": "#315E91",
+      "colorSuccess": "#2F6B49",
+      "colorWarning": "#986511",
+      "colorError": "#B53B3B",
+      "colorTextBase": "#202820",
+      "colorText": "#202820",
+      "colorTextSecondary": "#5F6B63",
+      "colorTextTertiary": "#626D65",
+      "colorBgBase": "#FFFFFF",
+      "colorBgLayout": "#F7F7F2",
+      "colorBgContainer": "#FFFFFF",
+      "colorBorder": "#C9D1CA",
+      "colorBorderSecondary": "#E1E6DF",
+      "colorLink": "#265E49",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Noto Sans CJK SC\", \"Microsoft YaHei\", sans-serif",
+      "fontSize": 14,
+      "borderRadius": 6,
+      "controlHeight": 36,
+      "lineWidth": 1
+    },
+    "components": {
+      "Menu": {
+        "itemBg": "#EDF1E9",
+        "itemColor": "#34463D",
+        "itemSelectedBg": "#D9E6DA",
+        "itemSelectedColor": "#1F503C",
+        "itemHoverBg": "#E4EBE0",
+        "groupTitleColor": "#5F6B63",
+        "itemHeight": 44,
+        "itemBorderRadius": 4
+      }
+    }
+  },
+  "layout": {
+    "unit": "px",
+    "referenceViewport": {
+      "width": 1440,
+      "height": 1024
+    },
+    "sidebarWidth": 208,
+    "collapsedSidebarWidth": 72,
+    "headerHeight": 64,
+    "pageGutter": 32,
+    "compactPageGutter": 24,
+    "contentMaxWidth": 1600,
+    "sectionGap": 32,
+    "fieldGap": 24,
+    "inlineGap": 12,
+    "tableRowMinHeight": 56,
+    "denseTableRowMinHeight": 48,
+    "orderDetailWidth": 560,
+    "orderSplitMinViewport": 1366,
+    "tableMinWidth": 760,
+    "formMaxWidth": 1120,
+    "formLabelWidth": 104,
+    "drawerDefaultWidth": 560,
+    "modalDefaultWidth": 480,
+    "footerHeight": 72
+  },
+  "typography": {
+    "pageTitle": {
+      "size": 28,
+      "lineHeight": 40,
+      "weight": 600
+    },
+    "sectionTitle": {
+      "size": 18,
+      "lineHeight": 28,
+      "weight": 600
+    },
+    "body": {
+      "size": 14,
+      "lineHeight": 22,
+      "weight": 400
+    },
+    "supporting": {
+      "size": 13,
+      "lineHeight": 20,
+      "weight": 400
+    },
+    "metric": {
+      "size": 32,
+      "lineHeight": 40,
+      "weight": 600
+    },
+    "brand": {
+      "family": "Georgia, \"Times New Roman\", serif",
+      "size": 24,
+      "weight": 600
+    }
+  },
+  "semanticStatus": {
+    "neutral": {
+      "text": "#5F6B63",
+      "background": "#F0F2EF"
+    },
+    "pending": {
+      "text": "#986511",
+      "background": "#FFF5DF"
+    },
+    "active": {
+      "text": "#315E91",
+      "background": "#EDF3FB"
+    },
+    "success": {
+      "text": "#2F6B49",
+      "background": "#EDF6EE"
+    },
+    "danger": {
+      "text": "#B53B3B",
+      "background": "#FCEEEE"
+    }
+  },
+  "chart": {
+    "line": "#265E49",
+    "areaOpacity": 0.08,
+    "axis": "#626D65",
+    "grid": "#E1E6DF",
+    "lineWidth": 2,
+    "symbolSize": 6,
+    "smooth": false
+  },
+  "motion": {
+    "standardMs": 160,
+    "respectReducedMotion": true
+  }
+}
