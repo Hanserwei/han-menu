@@ -140,15 +140,6 @@ public class OrderService {
     return OrderViews.history(orders.history(identity.customerId(), page, size), page, size);
   }
 
-  /** 取消仅变更订单状态；不恢复购物车，也不调用尚未实现的支付能力. */
-  public OrderViews.Detail cancel(CustomerIdentity identity, UUID id, long version) {
-    customers.lockActive(identity);
-    var order = own(identity, id);
-    order.cancel(version, clock.instant());
-    orders.update(order);
-    return OrderViews.detail(own(identity, id));
-  }
-
   /**
    * 按当前目录原子合并旧订单全部条目，不复制历史价格或直接创建新订单.
    *

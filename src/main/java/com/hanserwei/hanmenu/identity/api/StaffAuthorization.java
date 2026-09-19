@@ -4,4 +4,7 @@ package com.hanserwei.hanmenu.identity.api;
 public interface StaffAuthorization {
   /** 再次检查账号当前状态与安全版本，并要求管理员权限. */
   void requireAdministrator(StaffIdentity identity);
+
+  /** 检查当前员工账号和安全版本，允许管理员或普通员工处理履约. */
+  void requireStaff(StaffIdentity identity);
 }

@@ -67,6 +67,15 @@ management:
     health:
       show-details: never
 han-menu:
+  payment:
+    scheduling-enabled: ${PAYMENT_SCHEDULING_ENABLED:true}
+    alipay:
+      app-id: ${ALIPAY_APP_ID:}
+      seller-id: ${ALIPAY_SELLER_ID:}
+      private-key: ${ALIPAY_PRIVATE_KEY:}
+      public-key: ${ALIPAY_PUBLIC_KEY:}
+      gateway: ${ALIPAY_GATEWAY:https://openapi-sandbox.dl.alipaydev.com/gateway.do}
+      notify-url: ${ALIPAY_NOTIFY_URL:}
   customer:
     session-ttl: PT24H
     login-max-attempts: 10

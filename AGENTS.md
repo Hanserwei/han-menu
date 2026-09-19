@@ -6,12 +6,12 @@
 - 本项目是全新版本，没有历史业务数据、用户、旧接口或旧客户端需要兼容。
 - 顾客移动端使用 Flutter App，不开发微信小程序；顾客认证不依赖微信 openid/code。
 - 支付测试仅对接支付宝沙箱，不以生产支付或正式商户资质作为交付前提。
-- 后端规划支付创建、查询、通知及退款端口，渠道签名和验签在服务端；不能信任 App 返回的支付成功。
-- 移动端与支付目前仅完成决策，不因 P2 开发而提前创建 Flutter 工程、支付 SDK 集成或占位成功接口。
+- P5 已实现支付宝沙箱支付创建、查询、通知、关单与全额退款；渠道签名和验签在服务端，不能信任 App 返回的支付成功。
+- Flutter 工程与移动端 SDK 真机联调留在 P7；禁止提供模拟支付成功接口。
 - P1 包含身份认证、员工权限、全新资源 API、ORM 持久化、审计及接口文档。
-- P1/P2/P3 已完成；P4 已实现完整未支付订单生命周期，契约见 `docs/P4_CONTRACT.md`。
-- P5 等后续阶段仍按用户指令推进，不提前实现支付、履约或 Flutter 工程。
-- 顾客与员工使用独立会话及安全链；购物车仅通过 customer/catalog 的公开 API 访问业务能力；订单仅通过 customer/shop/catalog/cart 的公开 API 结算。
+- P1—P5 后端已实现；P4/P5 契约见 `docs/P4_CONTRACT.md` 和 `docs/P5_CONTRACT.md`。
+- P6/P7 等后续阶段仍按用户指令推进，不提前实现通知报表或 Flutter 工程。
+- 顾客与员工使用独立会话及安全链；购物车仅通过 customer/catalog 的公开 API 访问业务能力；订单通过 customer/shop/catalog/cart 的公开 API 结算，并通过 payment 的公开 API 和结果事件协作；payment 不反向依赖 ordering。
 - 使用 JDK 25 和已提交的 Maven Wrapper，一个工程构建一个可执行 JAR。
 - 先按限界上下文组织模块，再在内部划分 domain/application/infrastructure/web。
 

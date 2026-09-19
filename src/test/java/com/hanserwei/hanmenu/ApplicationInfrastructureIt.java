@@ -92,6 +92,8 @@ class ApplicationInfrastructureIt {
             "cart",
             "cart_item",
             "ordering_order",
-            "ordering_line");
+            "ordering_line",
+            "payment_intent",
+            "payment_refund");
   }
 }

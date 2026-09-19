@@ -58,4 +58,51 @@ class JpaOrderRepository implements OrderRepository {
         result.getContent().stream().map(OrderSummaryValue::domain).toList(),
         result.getTotalElements());
   }
+
+  @Override
+  public Order lock(UUID id) {
+    return records
+        .findLockedById(id)
+        .orElseThrow(
+            () ->
+                new com.hanserwei.hanmenu.ordering.domain.OrderException(
+                    com.hanserwei.hanmenu.ordering.domain.OrderException.Reason.NOT_FOUND, "订单不存在"))
+        .domain();
+  }
+
+  @Override
+  public Optional<Order> find(UUID id) {
+    return records.findById(id).map(OrderEntity::domain);
+  }
+
+  @Override
+  public java.util.List<UUID> expired(java.time.Instant before, int limit) {
+    return records
+        .findByStatusAndCreatedAtLessThanEqualOrderByCreatedAtAscIdAsc(
+            Order.Status.UNPAID, before, PageRequest.of(0, limit))
+        .stream()
+        .map(value -> value.id)
+        .toList();
+  }
+
+  @Override
+  public OrderPage management(Order.Status status, int page, int size) {
+    org.springframework.data.jpa.domain.Specification<OrderEntity> filters =
+        (root, query, builder) ->
+            status == null ? builder.conjunction() : builder.equal(root.get("status"), status);
+    var result =
+        records.findBy(
+            filters,
+            query ->
+                query
+                    .as(OrderSummaryValue.class)
+                    .page(
+                        PageRequest.of(
+                            page,
+                            size,
+                            Sort.by("createdAt").descending().and(Sort.by("id").descending()))));
+    return new OrderPage(
+        result.getContent().stream().map(OrderSummaryValue::domain).toList(),
+        result.getTotalElements());
+  }
 }

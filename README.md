@@ -1,16 +1,17 @@
 # Han Menu · 全新外卖系统
 
 参考苍穹外卖的业务能力，以 Java 25、Spring Boot 4.1.1、Spring Modulith 2.1.1 构建 DDD
-模块化单体。当前已实现 P1 员工身份、P2 商品与门店，P3 顾客身份、地址簿和购物车，以及 P4 完整未支付订单生命周期。
+模块化单体。当前已实现 P1 员工身份、P2 商品与门店，P3 顾客身份、地址簿和购物车，P4 完整未支付订单生命周期，以及 P5 支付宝沙箱支付、退款与订单履约。
 
 顾客移动端采用 **Flutter App**，支付测试采用 **支付宝沙箱**。后端按移动端需求规划接口，
-当前未实现移动端工程或支付业务，边界见 [移动端与支付决策](docs/MOBILE_PAYMENT_DECISION.md)。
+当前未创建 Flutter 工程，支付后端与沙箱交易闭环已实现，边界见 [移动端与支付决策](docs/MOBILE_PAYMENT_DECISION.md)。
 
 ## 设计与使用
 
 - [架构决策](docs/ARCHITECTURE.md)：模块边界、面向对象、JPA、事务与接口设计。
 - [P1 验收](docs/P1_ACCEPTANCE.md)：进入 P2 前的范围与验证结果。
 - [P2 API](docs/P2_CONTRACT.md)：分类、菜品、口味、套餐、图片、缓存和门店营业。
+- [P5 API](docs/P5_CONTRACT.md)：支付宝沙箱、验签通知、全额退款、恢复任务及员工履约。
 - [P4 API](docs/P4_CONTRACT.md)：幂等下单、快照、历史、取消与再来一单。
 - [P3 API](docs/P3_CONTRACT.md)：Flutter 顾客登录、地址默认切换和版本化购物车。
 - [P1 API](docs/P1_CONTRACT.md)：新会话与员工资源、认证、错误、分页与版本约定。
@@ -53,20 +54,20 @@ com.hanserwei.hanmenu
 ├── shop           门店经营（已实现）
 ├── catalog        分类、菜品、口味、套餐（已实现）
 ├── cart           购物车（已实现）
-├── ordering       未支付订单（已实现；支付与履约待 P5）
-├── payment        支付与退款
+├── ordering       订单、支付协作与履约（已实现）
+├── payment        支付宝沙箱支付、全额退款与结果事件（已实现）
 ├── notification   消息投递
 └── reporting      经营报表
 ```
 
 各模块使用 domain/application/infrastructure/web 分层，api/events 为明确发布的模块契约。
-identity、catalog、shop、customer、cart、ordering 的持久化集中在 `infrastructure/persistence`：Spring Data 接口、JPA 实体及仓储适配器。
+identity、catalog、shop、customer、cart、ordering、payment 的持久化集中在 `infrastructure/persistence`：Spring Data 接口、JPA 实体及仓储适配器。
 领域模型封装业务行为，HTTP 仅返回专用 DTO。
 
 ## 关键基线
 
 - Spring Data JPA 4.1.1 / Hibernate 7.4.5.Final：ORM 映射、派生查询、版本锁、实体图。
-- Flyway：V1 身份模型，V2 Modulith JPA 事件登记，V3 目录与门店，V4 顾客与购物车，V5 未支付订单；Hibernate 只校验结构，Open-in-View 关闭。
+- Flyway：V1 身份模型，V2 Modulith JPA 事件登记，V3 目录与门店，V4 顾客与购物车，V5 未支付订单，V6 支付与履约；Hibernate 只校验结构，Open-in-View 关闭。
 - UUID 业务标识、UTC 时刻、必填更新版本、零基分页、严格 JSON 字段校验。
 - Spring Security、BCrypt、持久化会话、Redis 双维度登录限流、最小化安全审计。
 - Guava 33.7.1-jre、Commons Lang3 3.20.0、springdoc-openapi 3.1.1。
@@ -74,7 +75,7 @@ identity、catalog、shop、customer、cart、ordering 的持久化集中在 `in
 
 参考项目仅提供业务输入。本系统没有旧账号导入、旧 API 适配层或演示表。
 项目数据库为 `han_menu`、`han_menu_test`，与 `pg18_lab` 等其他数据库分开管理。
-当前提供员工、顾客、地址、购物车、商品、门店和未支付订单接口；支付与履约按后续阶段实施。
+当前提供员工、顾客、地址、购物车、商品、门店、支付和订单履约接口。App 真机 SDK 联调随 P7 Flutter 工程推进。
 
 ## 开发与验证
 

@@ -53,7 +53,19 @@ public final class OrderViews {
                         line.subtotal()))
             .toList(),
         order.total(),
-        "CNY");
+        "CNY",
+        order.expiresAt(),
+        new Lifecycle(
+            order.lifecycle().paymentId(),
+            order.lifecycle().paidAt(),
+            order.lifecycle().acceptedAt(),
+            order.lifecycle().deliveredAt(),
+            order.lifecycle().completedAt(),
+            order.lifecycle().cancelReason() == null
+                ? null
+                : order.lifecycle().cancelReason().name(),
+            order.lifecycle().refundStatus().name(),
+            order.lifecycle().refundId()));
   }
 
   /** 映射有界历史查询，稳定排序由仓储完成. */
@@ -87,12 +99,25 @@ public final class OrderViews {
       Address address,
       List<Line> items,
       BigDecimal total,
-      String currency) {
+      String currency,
+      Instant expiresAt,
+      Lifecycle lifecycle) {
     /** 固定条目列表. */
     public Detail {
       items = List.copyOf(items);
     }
   }
+
+  /** 生命周期查询 DTO 不暴露领域对象，取消与退款结果分开表达. */
+  public record Lifecycle(
+      UUID paymentId,
+      Instant paidAt,
+      Instant acceptedAt,
+      Instant deliveredAt,
+      Instant completedAt,
+      String cancelReason,
+      String refundStatus,
+      UUID refundId) {}
 
   /** 收货地址快照不在调试字符串中暴露个人信息. */
   public record Address(

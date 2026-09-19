@@ -34,7 +34,9 @@ class CustomerSecurityConfiguration {
             "/api/v1/cart",
             "/api/v1/cart/**",
             "/api/v1/orders",
-            "/api/v1/orders/**")
+            "/api/v1/orders/**",
+            "/api/v1/payments/**",
+            "/api/v1/refunds/**")
         .csrf(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)

@@ -30,9 +30,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "顾客订单")
 class OrderController {
   private final OrderService orders;
+  private final com.hanserwei.hanmenu.ordering.application.OrderLifecycleService lifecycle;
 
-  OrderController(OrderService orders) {
+  OrderController(
+      OrderService orders,
+      com.hanserwei.hanmenu.ordering.application.OrderLifecycleService lifecycle) {
     this.orders = orders;
+    this.lifecycle = lifecycle;
   }
 
   /** 幂等提交返回同一订单；新建为 201，重放为 200，二者都附订单地址. */
@@ -79,7 +83,7 @@ class OrderController {
       @AuthenticationPrincipal CustomerIdentity identity,
       @PathVariable UUID id,
       @Valid @RequestBody Cancellation body) {
-    return orders.cancel(identity, id, body.version());
+    return lifecycle.cancel(identity, id, body.version());
   }
 
   /** 将旧订单商品按当前可售规则加入购物车；任一失效整体拒绝. */

@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** 订单实体仅在创建时复制历史快照，生命周期更新只触及状态与取消时间. */
+/** 订单实体仅在创建时复制历史快照，生命周期更新只写付款、取消、退款及履约事实. */
 @Entity(name = "CustomerOrder")
 @Table(name = "ordering_order")
 public class OrderEntity {
@@ -41,6 +41,19 @@ public class OrderEntity {
   @Version Long version;
   Instant createdAt;
   Instant cancelledAt;
+  UUID paymentId;
+  Instant paidAt;
+  Instant acceptedAt;
+  Instant deliveredAt;
+  Instant completedAt;
+
+  @Enumerated(EnumType.STRING)
+  Order.CancelReason cancelReason;
+
+  @Enumerated(EnumType.STRING)
+  Order.RefundStatus refundStatus;
+
+  UUID refundId;
 
   /** ORM 重建入口. */
   protected OrderEntity() {}
@@ -64,6 +77,15 @@ public class OrderEntity {
   void applyState(Order value) {
     status = value.status();
     cancelledAt = value.cancelledAt();
+    var lifecycle = value.lifecycle();
+    paymentId = lifecycle.paymentId();
+    paidAt = lifecycle.paidAt();
+    acceptedAt = lifecycle.acceptedAt();
+    deliveredAt = lifecycle.deliveredAt();
+    completedAt = lifecycle.completedAt();
+    cancelReason = lifecycle.cancelReason();
+    refundStatus = lifecycle.refundStatus();
+    refundId = lifecycle.refundId();
   }
 
   Order domain() {
@@ -78,7 +100,16 @@ public class OrderEntity {
             status,
             version,
             createdAt,
-            cancelledAt);
+            cancelledAt,
+            new Order.Lifecycle(
+                paymentId,
+                paidAt,
+                acceptedAt,
+                deliveredAt,
+                completedAt,
+                cancelReason,
+                refundStatus,
+                refundId));
     if (value.total().compareTo(total) != 0) {
       throw new IllegalStateException("订单金额与条目不一致");
     }

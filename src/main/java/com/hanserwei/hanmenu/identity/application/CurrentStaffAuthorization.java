@@ -19,6 +19,15 @@ class CurrentStaffAuthorization implements StaffAuthorization {
 
   @Override
   public void requireAdministrator(StaffIdentity identity) {
+    current(identity).requireAdministrator();
+  }
+
+  @Override
+  public void requireStaff(StaffIdentity identity) {
+    current(identity);
+  }
+
+  private com.hanserwei.hanmenu.identity.domain.EmployeeAccount current(StaffIdentity identity) {
     if (identity == null) {
       throw new IdentityException(IdentityException.Reason.INVALID_CREDENTIALS, "请先登录");
     }
@@ -28,6 +37,6 @@ class CurrentStaffAuthorization implements StaffAuthorization {
             .orElseThrow(
                 () -> new IdentityException(IdentityException.Reason.INVALID_CREDENTIALS, "身份已失效"));
     account.requireActive(identity.securityVersion());
-    account.requireAdministrator();
+    return account;
   }
 }
