@@ -5,6 +5,9 @@ public interface ShopQuery {
   /** 返回门店当前信息，不将缓存状态作为营业事实来源. */
   ShopView current();
 
+  /** 在调用方事务内锁定并读取营业事实，用于订单结算. */
+  ShopView forCheckout();
+
   /** 对外查询模型不含领域对象或 ORM 类型. */
   record ShopView(String name, String phone, String address, String status, long version) {}
 }

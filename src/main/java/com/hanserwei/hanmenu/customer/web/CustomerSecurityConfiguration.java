@@ -29,7 +29,12 @@ class CustomerSecurityConfiguration {
   SecurityFilterChain customerSecurity(
       HttpSecurity http, CustomerAuthentication authentication, CustomerSecurityResponses responses)
       throws Exception {
-    return http.securityMatcher("/api/v1/customer/**", "/api/v1/cart", "/api/v1/cart/**")
+    return http.securityMatcher(
+            "/api/v1/customer/**",
+            "/api/v1/cart",
+            "/api/v1/cart/**",
+            "/api/v1/orders",
+            "/api/v1/orders/**")
         .csrf(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)

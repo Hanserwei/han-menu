@@ -78,6 +78,31 @@ public final class ShoppingCart {
         now);
   }
 
+  /** 校验结算集合必须非空、不重复且完全属于本车，避免误结算其他顾客的条目. */
+  public List<CartItem> selected(List<UUID> itemIds) {
+    if (itemIds == null
+        || itemIds.isEmpty()
+        || itemIds.size() > 50
+        || new java.util.HashSet<>(itemIds).size() != itemIds.size()) {
+      throw new CartException(CartException.Reason.INVALID_INPUT, "结算条目必须为 1 至 50 个不同标识");
+    }
+    var selected = items.stream().filter(item -> itemIds.contains(item.id())).toList();
+    if (selected.size() != itemIds.size()) {
+      throw new CartException(CartException.Reason.NOT_FOUND, "结算条目不存在");
+    }
+    return selected;
+  }
+
+  /** 只移除已验证的所选条目，保留未参与结算的商品. */
+  public ShoppingCart settle(List<UUID> itemIds, Instant now) {
+    selected(itemIds);
+    return new ShoppingCart(
+        customerId,
+        items.stream().filter(item -> !itemIds.contains(item.id())).toList(),
+        version,
+        now);
+  }
+
   /** 清空当前购物车. */
   public ShoppingCart clear(Instant now) {
     return new ShoppingCart(customerId, List.of(), version, now);

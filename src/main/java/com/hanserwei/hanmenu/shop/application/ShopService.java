@@ -6,6 +6,7 @@ import com.hanserwei.hanmenu.shop.api.ShopQuery;
 import com.hanserwei.hanmenu.shop.domain.Shop;
 import com.hanserwei.hanmenu.shop.domain.ShopRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** 门店应用用例，通过身份模块公开契约授权，并在事务内调用聚合行为. */
@@ -26,6 +27,13 @@ public class ShopService implements ShopQuery {
   @Transactional(readOnly = true)
   public ShopView current() {
     return view(repository.get());
+  }
+
+  /** 结算读取持有行锁直到订单提交，门店写入由数据库锁串行. */
+  @Override
+  @Transactional(propagation = Propagation.MANDATORY)
+  public ShopView forCheckout() {
+    return view(repository.lock());
   }
 
   /** 按客户端版本修改资料并返回新版本. */

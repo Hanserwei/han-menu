@@ -9,9 +9,9 @@
 - 后端规划支付创建、查询、通知及退款端口，渠道签名和验签在服务端；不能信任 App 返回的支付成功。
 - 移动端与支付目前仅完成决策，不因 P2 开发而提前创建 Flutter 工程、支付 SDK 集成或占位成功接口。
 - P1 包含身份认证、员工权限、全新资源 API、ORM 持久化、审计及接口文档。
-- P1/P2 已完成；当前已获授权实施 P3 顾客身份、资料、地址簿与购物车。
-- P4/P5 等阶段仍按用户指令推进，不提前实现下单、支付或 Flutter 工程。
-- 顾客与员工使用独立会话及安全链；购物车仅通过 customer/catalog 的公开 API 访问业务能力。
+- P1/P2/P3 已完成；P4 已实现完整未支付订单生命周期，契约见 `docs/P4_CONTRACT.md`。
+- P5 等后续阶段仍按用户指令推进，不提前实现支付、履约或 Flutter 工程。
+- 顾客与员工使用独立会话及安全链；购物车仅通过 customer/catalog 的公开 API 访问业务能力；订单仅通过 customer/shop/catalog/cart 的公开 API 结算。
 - 使用 JDK 25 和已提交的 Maven Wrapper，一个工程构建一个可执行 JAR。
 - 先按限界上下文组织模块，再在内部划分 domain/application/infrastructure/web。
 

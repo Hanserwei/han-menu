@@ -12,6 +12,9 @@ public interface CatalogRepository {
   /** 返回当前已提交修订号，用于缓存代际隔离. */
   long revision();
 
+  /** 在结算事务内固定目录代际，不递增修订号或改变缓存代际. */
+  void lockForCheckout();
+
   /** 查询分类. */
   Optional<Category> category(UUID id);
 

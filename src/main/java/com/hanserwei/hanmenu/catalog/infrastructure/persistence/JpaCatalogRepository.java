@@ -48,6 +48,11 @@ class JpaCatalogRepository implements CatalogRepository {
   }
 
   @Override
+  public void lockForCheckout() {
+    revisions.findLockedById(1).orElseThrow();
+  }
+
+  @Override
   public long revision() {
     return revisions.findById(1).orElseThrow().revision;
   }

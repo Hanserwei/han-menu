@@ -23,6 +23,11 @@ class JpaShopRepository implements ShopRepository {
   }
 
   @Override
+  public Shop lock() {
+    return records.findLockedById(1).orElseThrow().domain();
+  }
+
+  @Override
   public void save(Shop value) {
     var entity = records.findById(1).orElseThrow();
     if (entity.version != value.version()) {

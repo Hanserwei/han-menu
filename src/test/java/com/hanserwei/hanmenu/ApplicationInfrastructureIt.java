@@ -90,6 +90,8 @@ class ApplicationInfrastructureIt {
             "customer_session",
             "customer_address",
             "cart",
-            "cart_item");
+            "cart_item",
+            "ordering_order",
+            "ordering_line");
   }
 }
