@@ -1893,7 +1893,7 @@ export interface components {
             lastFailure?: string;
         };
         History: {
-            items?: components["schemas"]["Summary"][];
+            items?: components["schemas"]["OrderSummary"][];
             /** Format: int32 */
             page?: number;
             /** Format: int32 */
@@ -1902,6 +1902,19 @@ export interface components {
             totalElements?: number;
             /** Format: int64 */
             totalPages?: number;
+        };
+        OrderSummary: {
+            /** Format: uuid */
+            id?: string;
+            status?: string;
+            total?: number;
+            currency?: string;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            cancelledAt?: string;
         };
         Feed: {
             items?: components["schemas"]["NoticeView"][];

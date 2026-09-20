@@ -516,6 +516,18 @@ class ManagementCapabilitiesIt {
       assertThat(root.path("paths").has(path)).isTrue();
     }
     var schemas = root.path("components").path("schemas");
+    assertThat(
+            schemas
+                .path("History")
+                .path("properties")
+                .path("items")
+                .path("items")
+                .path("$ref")
+                .asString())
+        .isEqualTo("#/components/schemas/OrderSummary");
+    assertThat(schemas.path("OrderSummary").path("properties").has("total")).isTrue();
+    assertThat(schemas.path("OrderSummary").path("properties").has("status")).isTrue();
+    assertThat(schemas.path("Summary").path("properties").has("turnover")).isTrue();
     assertThat(schemas.path("CustomerStatusChange").path("properties").has("enabled")).isTrue();
     assertThat(
             schemas

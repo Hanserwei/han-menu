@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useSessionStore, loadLoginPage, loadAccountPage } from '@/modules/auth'
+import { loadOrdersPage } from '@/modules/orders'
 import { loadWorkspacePage } from '@/modules/workspace'
 import { loadEmployeesPage } from '@/modules/employees'
 import { loadCustomersPage } from '@/modules/customers'
@@ -26,6 +27,11 @@ export const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         { path: '', redirect: '/workspace' },
+        {
+          path: 'orders/:id?',
+          component: loadOrdersPage,
+          meta: { title: '订单中心', group: '日常作业' },
+        },
         {
           path: 'workspace',
           name: 'workspace',

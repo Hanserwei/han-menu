@@ -684,3 +684,229 @@ p {
     justify-content: flex-start;
   }
 }
+
+/* PC-3 列表与详情独立滚动；窄桌面以抽屉承载同一详情组件。 */
+.order-status-tabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.order-status-tabs .ant-select {
+  min-width: 160px;
+}
+.order-filters > .ant-form-item {
+  width: auto;
+}
+.order-filters .ant-input {
+  min-width: 250px;
+}
+.advanced-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+}
+.order-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.order-layout.has-detail {
+  grid-template-columns: minmax(0, 1fr) 560px;
+}
+.order-list-region {
+  min-width: 0;
+}
+.order-list-region .ant-table {
+  font-variant-numeric: tabular-nums;
+}
+.selected-order > td {
+  background: #edf1e9 !important;
+}
+.resource-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.order-detail-panel {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-left: 1px solid var(--line);
+  height: calc(100dvh - 300px);
+  min-height: 480px;
+  max-height: 1000px;
+  position: sticky;
+  top: 80px;
+}
+.order-detail-panel.in-drawer {
+  height: calc(100dvh - 130px);
+  min-height: 0;
+  border: 0;
+  position: static;
+}
+.order-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.order-detail-header h2 {
+  margin: 0;
+}
+.order-detail-scroll {
+  overflow: auto;
+  padding: 24px;
+  flex: 1;
+  min-height: 0;
+}
+.order-identity {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.order-timeline {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 24px;
+}
+.order-timeline li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.order-timeline time {
+  color: var(--muted);
+}
+.order-detail-section {
+  border-top: 1px solid var(--line);
+  padding-top: 24px;
+  margin-top: 24px;
+}
+.order-line {
+  margin-bottom: 20px;
+}
+.order-line-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px 90px;
+  gap: 12px;
+}
+.order-line-title strong {
+  overflow-wrap: anywhere;
+}
+.order-line-title > span:last-child {
+  text-align: right;
+}
+.order-line p {
+  font-size: 13px;
+  margin: 8px 0;
+}
+.meal-snapshot {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0 8px 12px;
+  border-left: 2px solid var(--line);
+}
+.meal-snapshot small {
+  color: var(--muted);
+}
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.order-total strong {
+  color: var(--primary);
+  font-size: 24px;
+}
+.order-action-footer {
+  flex: none;
+  padding: 16px 24px;
+  border-top: 1px solid var(--line);
+}
+.order-action-footer .row-actions {
+  justify-content: flex-end;
+}
+.metric-link {
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.metric-link:hover {
+  background: #edf1e9;
+}
+.awaiting-orders {
+  min-width: 0;
+  border-right: 1px solid var(--line);
+}
+.awaiting-orders .section-title {
+  gap: 12px;
+  align-items: start;
+}
+.store-section .today-metrics {
+  padding-top: 0;
+  margin-bottom: 24px;
+}
+@media (max-width: 700px) {
+  .order-filters .ant-input {
+    min-width: 0;
+  }
+  .order-filters .ant-form-item,
+  .order-filters .ant-picker {
+    width: 100%;
+  }
+  .order-detail-scroll {
+    padding: 16px;
+  }
+  .order-detail-header {
+    padding: 12px 16px;
+  }
+  .order-action-footer {
+    padding: 12px;
+  }
+}
+
+/* 列表、详情共享首屏剩余高度；底部动作独立于长快照滚动，不能被页面下沿裁切。 */
+@media (min-width: 1366px) {
+  .orders-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 128px);
+    min-height: 560px;
+  }
+  .orders-page > .page-heading,
+  .orders-page > .order-status-tabs,
+  .orders-page > .filter-bar,
+  .orders-page > .problem-alert {
+    flex-shrink: 0;
+  }
+  .orders-page > .order-layout {
+    flex: 1;
+    min-height: 240px;
+    align-items: stretch;
+  }
+  .orders-page .order-list-region {
+    overflow: auto;
+    min-height: 0;
+  }
+  .orders-page .order-detail-panel {
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    position: static;
+  }
+}

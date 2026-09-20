@@ -2,6 +2,7 @@ import pg from 'pg'
 import { randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
+import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3'
 
 /** 浏览器验收独立测试库及临时 schema，退出后先停应用再清理；禁止指向开发库。 */
@@ -26,6 +27,8 @@ const database = new pg.Client({
 })
 await database.connect()
 await database.query(`CREATE SCHEMA ${schema}`)
+await mkdir('.local', { recursive: true })
+await writeFile('.local/e2e-schema.json', JSON.stringify({ schema }), { mode: 0o600 })
 const child = spawn(
   'java',
   [
@@ -103,6 +106,7 @@ async function close() {
     storage.destroy()
     await database.query(`DROP SCHEMA ${schema} CASCADE`)
     await database.end()
+    await rm('.local/e2e-schema.json', { force: true })
   }
 }
 process.on('SIGTERM', () => {

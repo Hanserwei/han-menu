@@ -76,7 +76,7 @@ public final class OrderViews {
         page.items().stream()
             .map(
                 value ->
-                    new Summary(
+                    new OrderSummary(
                         value.id(),
                         value.status().name(),
                         value.total(),
@@ -167,7 +167,7 @@ public final class OrderViews {
   }
 
   /** 历史列表摘要不包含顾客个人资料. */
-  public record Summary(
+  public record OrderSummary(
       UUID id,
       String status,
       BigDecimal total,
@@ -178,7 +178,7 @@ public final class OrderViews {
 
   /** 零基分页模型，限制单页最大五十条. */
   public record History(
-      List<Summary> items, int page, int size, long totalElements, long totalPages) {
+      List<OrderSummary> items, int page, int size, long totalElements, long totalPages) {
     /** 固定分页集合. */
     public History {
       items = List.copyOf(items);

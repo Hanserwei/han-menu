@@ -24,9 +24,11 @@ const mobileMenu = ref(false)
 const loggingOut = ref(false)
 const mobile = computed(() => viewport.value < 1024)
 const selected = computed(() =>
-  route.path.startsWith('/customers')
-    ? '/customers'
-    : route.path.replace(/\/(?:new|[^/]+\/edit)$/, ''),
+  route.path.startsWith('/orders')
+    ? '/orders'
+    : route.path.startsWith('/customers')
+      ? '/customers'
+      : route.path.replace(/\/(?:new|[^/]+\/edit)$/, ''),
 )
 const openKeys = ref<string[]>([])
 watch(

@@ -219,7 +219,12 @@ const columns = [
         @click="toggle"
         >{{ current.enabled ? '停用顾客' : '启用顾客' }}</Button
       >
-      <p class="muted top-space">关联订单查询将在订单中心开放后提供。</p></template
+      <Button
+        class="inline-space"
+        :disabled="pending"
+        @click="router.push({ path: '/orders', query: { customerId: current.id } })"
+        >查看关联订单</Button
+      ></template
     >
   </Drawer>
 </template>

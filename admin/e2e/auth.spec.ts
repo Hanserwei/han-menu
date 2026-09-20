@@ -34,7 +34,7 @@ test('管理员登录、真实概况、刷新恢复与服务端退出', async ({
   page.on('pageerror', (error) => errors.push(error.message))
   await login(page, 'pc1admin', 'Pc1-local-admin-2026!')
   await expect(page.getByRole('heading', { name: '工作台', exact: true })).toBeVisible()
-  await expect(page.getByText('今日经营概况', { exact: true })).toBeVisible()
+  await expect(page.getByText('今日概况', { exact: true })).toBeVisible()
   await expect(page.getByText('顾客管理', { exact: true })).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)
   const session = await page.evaluate(() =>

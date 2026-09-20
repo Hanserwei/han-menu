@@ -8,10 +8,10 @@
 
 P0/P1 已完成，P1 复查见 [验收记录](P1_ACCEPTANCE.md)。P2 已实现商品目录与门店营业，
 范围和验证见 [P2 契约](P2_CONTRACT.md)。P3 顾客与购物车已实现，见 [P3 契约](P3_CONTRACT.md)。
-P4 已实现完整未支付订单生命周期，见 [P4 契约](P4_CONTRACT.md)。P5 后端支付／履约与沙箱交易闭环已实现，见 [P5 契约](P5_CONTRACT.md)。P6 通知、鉴权长连接与经营统计已实现，见 [P6 契约](P6_CONTRACT.md)。PC-1 已实现工程与身份基础，PC-2 已实现经营资料管理，见 [PC-1](PC1_CONTRACT.md)、[PC-2 契约](PC2_CONTRACT.md)；管理端前置接口补充见 [P7 后端补齐契约](P7_BACKEND_CONTRACT.md)。
+P4 已实现完整未支付订单生命周期，见 [P4 契约](P4_CONTRACT.md)。P5 后端支付／履约与沙箱交易闭环已实现，见 [P5 契约](P5_CONTRACT.md)。P6 通知、鉴权长连接与经营统计已实现，见 [P6 契约](P6_CONTRACT.md)。PC-1 已实现工程与身份基础，PC-2 已实现经营资料管理，PC-3 已实现订单作业闭环，见 [PC-1](PC1_CONTRACT.md)、[PC-2](PC2_CONTRACT.md)、[PC-3 契约](PC3_CONTRACT.md)；管理端前置接口补充见 [P7 后端补齐契约](P7_BACKEND_CONTRACT.md)。
 顾客端确定使用 Flutter App，后端已接入支付宝沙箱；移动端 SDK 真机联调留待 P7。
 详细边界见 [移动端与支付决策](MOBILE_PAYMENT_DECISION.md)。
-PC 管理端与 Flutter App 的技术选型及分阶段路线见 [P7 客户端规划](P7_FRONTEND_PLAN.md)；PC 管理端已在 `admin/` 实施 PC-1/PC-2，Flutter 工程尚未创建。
+PC 管理端与 Flutter App 的技术选型及分阶段路线见 [P7 客户端规划](P7_FRONTEND_PLAN.md)；PC 管理端已在 `admin/` 实施 PC-1—PC-3，Flutter 工程尚未创建。
 管理端视觉已选浅鼠尾草／墨绿方向，页面细化见 [UI 设计交付](design/admin/README.md)。
 每个阶段按实际用例纵向交付领域行为、持久化、API、测试和文档；不先批量堆砌空 Service/Mapper。
 

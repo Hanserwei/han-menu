@@ -44,3 +44,5 @@ __screenshots__/
 !.env.example
 playwright-report/
 test-results/
+
+.local/
