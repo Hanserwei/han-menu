@@ -100,7 +100,7 @@ class EmployeeController {
   ResponseEntity<Void> status(
       @AuthenticationPrincipal StaffIdentity actor,
       @PathVariable UUID id,
-      @Valid @RequestBody StatusChange body) {
+      @Valid @RequestBody EmployeeStatusChange body) {
     administration.changeStatus(actor, id, body.status() == Status.ACTIVE, body.version());
     return ResponseEntity.noContent().build();
   }
@@ -131,7 +131,7 @@ class EmployeeController {
   }
 
   /** 明确命名的状态替代魔法数字，版本号始终必填. */
-  record StatusChange(@NotNull Status status, @NotNull @Min(0) Long version) {}
+  record EmployeeStatusChange(@NotNull Status status, @NotNull @Min(0) Long version) {}
 
   /** HTTP 契约的账号状态，显式映射为领域行为的输入. */
   enum Status {

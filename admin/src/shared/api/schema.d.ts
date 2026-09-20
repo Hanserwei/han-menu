@@ -1696,9 +1696,14 @@ export interface components {
             unavailableReason?: string;
             subtotal?: number;
         };
-        StatusChange: {
+        ShopStatusChange: {
             /** @enum {string} */
             status: "OPEN" | "CLOSED";
+            /** Format: int64 */
+            version: number;
+        };
+        CustomerStatusChange: {
+            enabled: boolean;
             /** Format: int64 */
             version: number;
         };
@@ -1714,6 +1719,12 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string;
+        };
+        EmployeeStatusChange: {
+            /** @enum {string} */
+            status: "ACTIVE" | "DISABLED";
+            /** Format: int64 */
+            version: number;
         };
         SaleChange: {
             /** @enum {string} */
@@ -3241,7 +3252,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["StatusChange"];
+                "application/json": components["schemas"]["ShopStatusChange"];
             };
         };
         responses: {
@@ -3267,7 +3278,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["StatusChange"];
+                "application/json": components["schemas"]["CustomerStatusChange"];
             };
         };
         responses: {
@@ -3293,7 +3304,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["StatusChange"];
+                "application/json": components["schemas"]["EmployeeStatusChange"];
             };
         };
         responses: {

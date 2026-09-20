@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, h } from 'vue'
+import { computed, ref, onMounted, onUnmounted, h, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { Menu, Button, Dropdown, Avatar, Tag, Drawer, Tooltip } from 'antdv-next'
 import {
@@ -23,6 +23,24 @@ const collapsed = ref(viewport.value < 1366)
 const mobileMenu = ref(false)
 const loggingOut = ref(false)
 const mobile = computed(() => viewport.value < 1024)
+const selected = computed(() =>
+  route.path.startsWith('/customers')
+    ? '/customers'
+    : route.path.replace(/\/(?:new|[^/]+\/edit)$/, ''),
+)
+const openKeys = ref<string[]>([])
+watch(
+  () => [route.path, collapsed.value, mobile.value] as const,
+  ([path, isCollapsed, isMobile]) => {
+    if (isCollapsed && !isMobile) {
+      openKeys.value = []
+      return
+    }
+    if (path.startsWith('/catalog/')) openKeys.value = ['catalog']
+    else if (path.startsWith('/settings/')) openKeys.value = ['settings']
+  },
+  { immediate: true },
+)
 const items = computed(() => navigationItems(session.identity?.role === 'ADMIN'))
 const storefront = useQuery({
   queryKey: ['storefront'],
@@ -69,10 +87,11 @@ function profile(key: string) {
       >
       <nav class="sidebar-nav" aria-label="主导航">
         <Menu
+          v-model:open-keys="openKeys"
           mode="inline"
           :inline-collapsed="collapsed"
           :items="items"
-          :selected-keys="[route.path]"
+          :selected-keys="[selected]"
           @click="({ key }) => navigate(String(key))"
         />
       </nav>
@@ -98,9 +117,10 @@ function profile(key: string) {
       :open="mobileMenu"
       @close="mobileMenu = false"
       ><Menu
+        v-model:open-keys="openKeys"
         mode="inline"
         :items="items"
-        :selected-keys="[route.path]"
+        :selected-keys="[selected]"
         @click="({ key }) => navigate(String(key))"
     /></Drawer>
     <div class="app-main">
@@ -139,7 +159,9 @@ function profile(key: string) {
           /></Button>
         </div>
       </header>
-      <main id="main-content" class="page-content"><RouterView /></main>
+      <main id="main-content" class="page-content">
+        <RouterView :key="route.path.startsWith('/catalog/') ? route.path : undefined" />
+      </main>
     </div>
   </div>
 </template>

@@ -1,6 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useSessionStore, loadLoginPage, loadAccountPage } from '@/modules/auth'
 import { loadWorkspacePage } from '@/modules/workspace'
+import { loadEmployeesPage } from '@/modules/employees'
+import { loadCustomersPage } from '@/modules/customers'
+import { loadShopPage } from '@/modules/shop'
+import { loadCategoriesPage, loadProductsPage, loadProductEditorPage } from '@/modules/catalog'
 import AppShell from '../layouts/AppShell.vue'
 import StatusPage from '../layouts/StatusPage.vue'
 import { futureRoutes } from './navigation'
@@ -50,6 +54,50 @@ export const router = createRouter({
               },
             ]
           : []),
+        {
+          path: 'settings/employees',
+          component: loadEmployeesPage,
+          meta: { title: '员工管理', group: '系统管理', admin: true },
+        },
+        {
+          path: 'settings/shop',
+          component: loadShopPage,
+          meta: { title: '门店设置', group: '系统管理', admin: true },
+        },
+        {
+          path: 'customers/:id?',
+          component: loadCustomersPage,
+          meta: { title: '顾客管理', group: '经营管理', admin: true },
+        },
+        {
+          path: 'catalog/categories',
+          component: loadCategoriesPage,
+          meta: { title: '分类管理', group: '商品管理', admin: true },
+        },
+        ...(['dishes', 'meals'] as const).flatMap((segment) => {
+          const kind = segment === 'dishes' ? 'DISH' : 'SET_MEAL'
+          const label = kind === 'DISH' ? '菜品' : '套餐'
+          return [
+            {
+              path: `catalog/${segment}`,
+              component: loadProductsPage,
+              props: { kind },
+              meta: { title: `${label}管理`, group: '商品管理', admin: true },
+            },
+            {
+              path: `catalog/${segment}/new`,
+              component: loadProductEditorPage,
+              props: { kind },
+              meta: { title: `新增${label}`, group: '商品管理', admin: true },
+            },
+            {
+              path: `catalog/${segment}/:id/edit`,
+              component: loadProductEditorPage,
+              props: { kind },
+              meta: { title: `编辑${label}`, group: '商品管理', admin: true },
+            },
+          ]
+        }),
         ...futureRoutes.map((route) => ({
           path: route.path.slice(1),
           component: StatusPage,

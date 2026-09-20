@@ -532,3 +532,155 @@ p {
   color: var(--muted);
   font-size: 14px;
 }
+
+/* PC-2 管理页共享密度：筛选换行、表格区内滚动，编辑底栏不遮挡字段。 */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+.filter-bar > .ant-input,
+.filter-bar > .ant-select,
+.filter-bar .ant-form-item {
+  width: 200px;
+  margin: 0;
+}
+.list-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 24px 0;
+}
+.row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.row-actions .ant-btn-link {
+  padding-inline: 4px;
+}
+.top-space {
+  margin-top: 16px;
+}
+.inline-space {
+  margin-left: 12px;
+}
+.shop-form {
+  max-width: 800px;
+  margin-bottom: 24px;
+}
+.shop-form form {
+  max-width: 560px;
+}
+.product-image {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: #edf1e9;
+  color: #5f6b63;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.product-image.large-image {
+  width: 100%;
+  max-width: 240px;
+  height: 220px;
+  gap: 8px;
+  align-content: center;
+}
+.large-image img {
+  object-fit: contain;
+}
+.large-image .anticon {
+  font-size: 36px;
+}
+.back-link {
+  padding-left: 0;
+  margin-bottom: 16px;
+}
+.product-editor {
+  max-width: 1120px;
+  background: #fff;
+  padding: 24px;
+  padding-bottom: 100px;
+}
+.editor-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(230px, 1fr);
+  gap: 32px;
+}
+.editor-image {
+  border-left: 1px solid var(--line);
+  padding-left: 24px;
+}
+.two-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.spec-section {
+  margin-top: 32px;
+  border-top: 1px solid var(--line);
+  padding-top: 24px;
+}
+.flavor-editor {
+  border: 1px solid var(--line);
+  padding: 20px;
+  margin-bottom: 16px;
+  border-radius: 6px;
+}
+.flavor-editor > .row-actions > .ant-input {
+  width: 200px;
+}
+.flavor-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+.flavor-options .ant-input {
+  flex: 1;
+  min-width: 80px;
+}
+.editor-footer {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid var(--line);
+  padding: 20px 0;
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  z-index: 5;
+}
+@media (max-width: 1200px) {
+  .editor-columns {
+    grid-template-columns: 1fr;
+  }
+  .editor-image {
+    border: 0;
+    padding-left: 0;
+  }
+}
+@media (max-width: 700px) {
+  .two-fields,
+  .flavor-options {
+    grid-template-columns: 1fr;
+  }
+  .product-editor {
+    padding: 16px;
+  }
+  .list-pagination {
+    justify-content: flex-start;
+  }
+}

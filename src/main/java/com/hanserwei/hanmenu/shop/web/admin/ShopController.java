@@ -45,7 +45,7 @@ class ShopController {
   @PatchMapping("/status")
   @Operation(summary = "开店或打烊")
   ShopQuery.ShopView status(
-      @AuthenticationPrincipal StaffIdentity actor, @Valid @RequestBody StatusChange body) {
+      @AuthenticationPrincipal StaffIdentity actor, @Valid @RequestBody ShopStatusChange body) {
     return shop.changeStatus(actor, body.status() == OpeningStatus.OPEN, body.version());
   }
 
@@ -57,7 +57,7 @@ class ShopController {
       @NotNull @Min(0) Long version) {}
 
   /** 营业状态必须显式修改，不能由缓存覆盖. */
-  record StatusChange(@NotNull OpeningStatus status, @NotNull @Min(0) Long version) {}
+  record ShopStatusChange(@NotNull OpeningStatus status, @NotNull @Min(0) Long version) {}
 
   /** 门店营业状态. */
   enum OpeningStatus {

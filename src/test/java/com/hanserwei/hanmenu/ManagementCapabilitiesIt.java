@@ -516,6 +516,25 @@ class ManagementCapabilitiesIt {
       assertThat(root.path("paths").has(path)).isTrue();
     }
     var schemas = root.path("components").path("schemas");
+    assertThat(schemas.path("CustomerStatusChange").path("properties").has("enabled")).isTrue();
+    assertThat(
+            schemas
+                .path("EmployeeStatusChange")
+                .path("properties")
+                .path("status")
+                .path("enum")
+                .toString())
+        .contains("ACTIVE", "DISABLED")
+        .doesNotContain("OPEN");
+    assertThat(
+            schemas
+                .path("ShopStatusChange")
+                .path("properties")
+                .path("status")
+                .path("enum")
+                .toString())
+        .contains("OPEN", "CLOSED")
+        .doesNotContain("ACTIVE");
     assertThat(
             schemas
                 .path("CustomerPageView")

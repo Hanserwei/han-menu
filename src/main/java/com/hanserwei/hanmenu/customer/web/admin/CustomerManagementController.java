@@ -60,10 +60,10 @@ class CustomerManagementController {
   CustomerAdministration.ManagedCustomerView changeStatus(
       @AuthenticationPrincipal StaffIdentity actor,
       @PathVariable UUID id,
-      @Valid @RequestBody StatusChange body) {
+      @Valid @RequestBody CustomerStatusChange body) {
     return administration.changeStatus(actor, id, body.enabled(), body.version());
   }
 
   /** 修改状态必须同时给出目标状态和并发版本. */
-  record StatusChange(@NotNull Boolean enabled, @NotNull @Min(0) Long version) {}
+  record CustomerStatusChange(@NotNull Boolean enabled, @NotNull @Min(0) Long version) {}
 }

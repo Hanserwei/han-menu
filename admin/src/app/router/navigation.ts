@@ -15,12 +15,8 @@ import type { MenuProps } from 'antdv-next'
 export const futureRoutes = [
   { path: '/orders', title: '订单中心', admin: false },
   { path: '/notifications', title: '通知中心', admin: false },
-  { path: '/catalog/dishes', title: '商品管理', admin: true },
-  { path: '/customers', title: '顾客管理', admin: true },
   { path: '/finance/payments', title: '支付与退款', admin: true },
   { path: '/reports', title: '经营分析', admin: true },
-  { path: '/settings/shop', title: '门店设置', admin: true },
-  { path: '/settings/employees', title: '员工管理', admin: true },
   { path: '/settings/audit', title: '安全审计', admin: true },
   { path: '/settings/maintenance', title: '系统维护', admin: true },
 ]
@@ -56,18 +52,19 @@ export function navigationItems(administrator: boolean): MenuProps['items'] {
         label: '经营管理',
         children: [
           {
-            key: '/catalog/dishes',
+            key: 'catalog',
             label: '商品管理',
             icon: () => h(AppstoreOutlined),
-            disabled: true,
-            title: '暂未开放',
+            children: [
+              { key: '/catalog/dishes', label: '菜品管理' },
+              { key: '/catalog/meals', label: '套餐管理' },
+              { key: '/catalog/categories', label: '分类管理' },
+            ],
           },
           {
             key: '/customers',
             label: '顾客管理',
             icon: () => h(TeamOutlined),
-            disabled: true,
-            title: '暂未开放',
           },
           {
             key: '/finance/payments',
@@ -90,14 +87,18 @@ export function navigationItems(administrator: boolean): MenuProps['items'] {
         key: 'settings',
         label: '系统管理',
         icon: () => h(SettingOutlined),
-        children: futureRoutes
-          .filter((item) => item.path.startsWith('/settings/'))
-          .map((item) => ({
-            key: item.path,
-            label: item.title,
-            disabled: true,
-            title: '暂未开放',
-          })),
+        children: [
+          { key: '/settings/shop', label: '门店设置' },
+          { key: '/settings/employees', label: '员工管理' },
+          ...futureRoutes
+            .filter((item) => item.path.startsWith('/settings/'))
+            .map((item) => ({
+              key: item.path,
+              label: item.title,
+              disabled: true,
+              title: '暂未开放',
+            })),
+        ],
       },
     )
   return items

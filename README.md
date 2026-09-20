@@ -102,3 +102,5 @@ EntityManager 的乐观锁、单查询认证，以及业务更新和持久化事
 
 PC-1 已建立独立 [admin/ 工程](admin/README.md)，实现主题布局、员工认证与权限基础。
 阶段边界见 [PC-1 契约](docs/PC1_CONTRACT.md)，根 `scripts/verify.sh` 统一执行前后端门禁。
+
+PC-2 已开放员工、顾客、商品目录与门店管理，参见 [PC-2 契约](docs/PC2_CONTRACT.md)。

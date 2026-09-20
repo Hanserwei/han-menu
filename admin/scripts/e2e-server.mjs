@@ -2,6 +2,7 @@ import pg from 'pg'
 import { randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
+import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3'
 
 /** 浏览器验收独立测试库及临时 schema，退出后先停应用再清理；禁止指向开发库。 */
 const url = (process.env.TEST_DB_URL || 'jdbc:postgresql://localhost:5432/han_menu_test').replace(
@@ -13,6 +14,9 @@ if (!process.env.TEST_DB_PASSWORD)
   throw new Error('需要 TEST_DB_PASSWORD，请通过 scripts/with-env.sh 启动')
 const schema = `pc1_${randomUUID().replaceAll('-', '')}`
 const endpoint = new URL(url)
+const imagePrefix = `han-menu-test/${schema}/`
+const testBucket = process.env.RUSTFS_TEST_BUCKET || 'han-menu-test'
+if (!testBucket.endsWith('-test')) throw new Error('图片验收只允许测试桶')
 const database = new pg.Client({
   host: endpoint.hostname,
   port: Number(endpoint.port || 5432),
@@ -29,6 +33,7 @@ const child = spawn(
     '../target/han-menu-0.0.1-SNAPSHOT.jar',
     `--han-menu.identity.redis-key-prefix=han-menu:test:${schema}:login:`,
     `--han-menu.customer.redis-key-prefix=han-menu:test:${schema}:customer:`,
+    `--han-menu.catalog.storage.key-prefix=${imagePrefix}`,
   ],
   {
     stdio: ['ignore', 'ignore', 'inherit'],
@@ -53,7 +58,7 @@ const child = spawn(
       ALIPAY_APP_ID: '',
       ALIPAY_NOTIFY_URL: '',
       ALIPAY_SELLER_ID: '',
-      RUSTFS_BUCKET: process.env.RUSTFS_TEST_BUCKET || 'han-menu-test',
+      RUSTFS_BUCKET: testBucket,
     },
   },
 )
@@ -65,8 +70,40 @@ async function close() {
     child.kill('SIGTERM')
     await once(child, 'exit')
   }
-  await database.query(`DROP SCHEMA ${schema} CASCADE`)
-  await database.end()
+  // 仅删除本次随机命名空间的测试图片，绝不清理开发桶或其他测试记录。
+  const storage = new S3Client({
+    endpoint: process.env.RUSTFS_ENDPOINT || 'http://127.0.0.1:9000',
+    region: 'us-east-1',
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId: process.env.RUSTFS_ACCESS_KEY,
+      secretAccessKey: process.env.RUSTFS_SECRET_KEY,
+    },
+  })
+  try {
+    let continuation
+    do {
+      const page = await storage.send(
+        new ListObjectsV2Command({
+          Bucket: testBucket,
+          Prefix: imagePrefix,
+          ContinuationToken: continuation,
+        }),
+      )
+      const objects = (page.Contents || [])
+        .filter((item) => item.Key?.startsWith(imagePrefix))
+        .map((item) => ({ Key: item.Key }))
+      if (objects.length)
+        await storage.send(
+          new DeleteObjectsCommand({ Bucket: testBucket, Delete: { Objects: objects } }),
+        )
+      continuation = page.NextContinuationToken
+    } while (continuation)
+  } finally {
+    storage.destroy()
+    await database.query(`DROP SCHEMA ${schema} CASCADE`)
+    await database.end()
+  }
 }
 process.on('SIGTERM', () => {
   void close().then(() => process.exit(0))

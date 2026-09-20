@@ -30,7 +30,8 @@
       "itemHoverBg": "#E4EBE0",
       "groupTitleColor": "#5F6B63",
       "itemHeight": 44,
-      "itemBorderRadius": 4
+      "itemBorderRadius": 4,
+      "collapsedWidth": 72
     }
   }
 }

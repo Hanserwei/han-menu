@@ -69,8 +69,17 @@ test('普通员工隐藏管理导航且直接路由和真实接口均拒绝越�
       })
     ).status(),
   ).toBe(403)
-  await page.goto('/settings/employees')
-  await expect(page.getByText('你没有访问此页面的权限')).toBeVisible()
+  for (const path of [
+    '/settings/employees',
+    '/settings/shop',
+    '/customers',
+    '/catalog/categories',
+    '/catalog/dishes',
+    '/catalog/meals/new',
+  ]) {
+    await page.goto(path)
+    await expect(page.getByText('你没有访问此页面的权限')).toBeVisible()
+  }
   await page.setViewportSize({ width: 1024, height: 768 })
   await page.goto('/workspace')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
