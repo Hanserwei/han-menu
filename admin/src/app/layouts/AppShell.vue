@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, h, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
-import { Menu, Button, Dropdown, Avatar, Tag, Drawer, Tooltip } from 'antdv-next'
+import { Menu, Button, Dropdown, Avatar, Tag, Drawer } from 'antdv-next'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   UserOutlined,
   LogoutOutlined,
-  BellOutlined,
   DownOutlined,
 } from '@antdv-next/icons'
 import { useQuery } from '@tanstack/vue-query'
+import { NotificationBell } from '@/modules/notifications'
 import { useSessionStore } from '@/modules/auth'
 import { getStorefront } from '@/modules/workspace'
 import { navigationItems } from '../router/navigation'
@@ -143,11 +143,7 @@ function profile(key: string) {
             :color="storefront.data.value.status === 'OPEN' ? 'success' : 'default'"
             :bordered="false"
             >{{ storefront.data.value.status === 'OPEN' ? '营业中' : '已打烊' }}</Tag
-          ><span v-else class="muted">门店状态暂不可用</span
-          ><Tooltip title="通知中心暂未开放"
-            ><Button type="text" aria-label="通知中心暂未开放" disabled
-              ><BellOutlined /></Button></Tooltip
-          ><Dropdown
+          ><span v-else class="muted">门店状态暂不可用</span><NotificationBell /><Dropdown
             :menu="{ items: profileMenu, onClick: ({ key }) => profile(String(key)) }"
             :trigger="['click']"
             ><Button type="text" aria-label="账号菜单"><UserOutlined /></Button></Dropdown

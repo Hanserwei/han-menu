@@ -106,3 +106,5 @@ PC-1 已建立独立 [admin/ 工程](admin/README.md)，实现主题布局、员
 PC-2 已开放员工、顾客、商品目录与门店管理，参见 [PC-2 契约](docs/PC2_CONTRACT.md)。
 
 PC-3 已开放订单作业闭环与工作台待办，参见 [PC-3 契约](docs/PC3_CONTRACT.md)。
+
+PC-4 已开放实时来单／催单提醒、通知中心及阅读恢复，参见 [PC-4 契约](docs/PC4_CONTRACT.md)。

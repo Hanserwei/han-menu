@@ -4,6 +4,7 @@ import com.hanserwei.hanmenu.identity.api.StaffIdentity;
 import com.hanserwei.hanmenu.notification.application.NotificationService;
 import com.hanserwei.hanmenu.notification.application.StreamTicketService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -65,7 +66,8 @@ class NotificationController {
   /** 票据必须经员工 Bearer 签发，并通过子协议携带而非 URL 参数. */
   @PostMapping("/stream-tickets")
   @Operation(summary = "签发三十秒一次性通知连接票据")
-  ResponseEntity<StreamTicketService.Ticket> ticket(@RequestHeader("Authorization") String bearer) {
+  ResponseEntity<StreamTicketService.Ticket> ticket(
+      @Parameter(hidden = true) @RequestHeader("Authorization") String bearer) {
     return ResponseEntity.status(201)
         .cacheControl(CacheControl.noStore())
         .body(tickets.issue(bearer.substring(7).strip()));

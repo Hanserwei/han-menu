@@ -13,7 +13,6 @@ import type { MenuProps } from 'antdv-next'
 
 /** 导航是前端展示能力清单；后续业务页面未交付前不伪装为可操作入口。 */
 export const futureRoutes = [
-  { path: '/notifications', title: '通知中心', admin: false },
   { path: '/finance/payments', title: '支付与退款', admin: true },
   { path: '/reports', title: '经营分析', admin: true },
   { path: '/settings/audit', title: '安全审计', admin: true },
@@ -35,8 +34,6 @@ export function navigationItems(administrator: boolean): MenuProps['items'] {
           key: '/notifications',
           label: '通知中心',
           icon: () => h(BellOutlined),
-          disabled: true,
-          title: '暂未开放',
         },
       ],
     },

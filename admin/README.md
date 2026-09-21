@@ -1,6 +1,6 @@
 # HAN MENU 管理端
 
-PC-1 身份基础、PC-2 经营资料及 PC-3 订单作业，Vue 3 + TypeScript + antdv-next。独立 pnpm 工程，构建产物是 `dist/`；后端仍单独打包 JAR。
+PC-1 身份基础、PC-2 经营资料、PC-3 订单作业及 PC-4 实时通知，Vue 3 + TypeScript + antdv-next。独立 pnpm 工程，构建产物是 `dist/`；后端仍单独打包 JAR。
 
 ## 当前能力
 
@@ -9,7 +9,8 @@ PC-1 身份基础、PC-2 经营资料及 PC-3 订单作业，Vue 3 + TypeScript 
 - 统一 Bearer、RFC 9457、超时、请求取消、会话代际和查询缓存清理。
 - 真实工作台及门店摘要；员工、顾客、分类、菜品、套餐、图片关联与门店管理已开放。
 - 订单检索、快照详情、接单／拒单／取消／配送／完成、工作台待办与顾客关联订单已开放。
-- 报表、资金与通知连接按后续阶段推进。
+- 来单／催单实时提示、通知补查、本人阅读确认、断线恢复及HTTP降级已开放。
+- 报表、资金与管理员通知投递诊断按后续阶段推进。
 - 开发模式 `/_dev/components` 提供 Table/Form/DatePicker/Upload/Drawer 兼容性验收；生产构建不包含此路由和页面。
 
 ## 环境与启动
@@ -41,6 +42,7 @@ src/
   modules/
     auth/                 # 身份 API、会话状态机、登录和账号页
     workspace/            # 工作台和公开门店摘要
+    notifications/        # 独立Socket运行器、协议、个人阅读与页面
     orders/               # 订单查询、状态、详情生命周期与履约
     catalog/              # 分类、菜品、套餐、图片与规格草稿
     employees/            # 员工资料与启停用
@@ -106,9 +108,12 @@ vue-demi 的安装脚本只切换 Vue 适配版本，已显式登记允许构建
 ## 部署
 
 `pnpm build` 后仅部署 dist。Nginx 使用 history fallback：页面路径回退 index.html，`/api/` 代理后端，API 错误不可回退 HTML。
-保持 HTTPS 同源代理；不要直接把 `pnpm dev` 当生产服务器。生产代码不包含开发组件验收页，也不会创建 WebSocket 票据。
-后续 PC-4 再按通知契约实现一次性票据和重连补查。
+保持 HTTPS 同源代理；不要直接把 `pnpm dev` 当生产服务器。生产代码不包含开发组件验收页；员工登录后创建唯一通知连接，按一次性票据及HTTP补查协议恢复。
+WS代理需要升级头和后端精确允许的前端Origin，不能用通配符或把票据放URL。
 
 PC-2 约束和验收见 [阶段契约](../docs/PC2_CONTRACT.md)。
 
 PC-3 行为与测试边界见 [阶段契约](../docs/PC3_CONTRACT.md)；付款状态测试事实只写入运行器创建的临时测试 schema，不提供任何模拟支付 HTTP 接口。
+
+PC-4 详见 [阶段契约](../docs/PC4_CONTRACT.md)。开发后端配置 `NOTIFICATION_ALLOWED_ORIGINS=http://127.0.0.1:5173`，
+前端Origin必须与实际访问地址一致；后台任务启用后提供真实推送和员工会话撤销检查。

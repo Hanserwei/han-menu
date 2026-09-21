@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useSessionStore, loadLoginPage, loadAccountPage } from '@/modules/auth'
+import { loadNotificationsPage } from '@/modules/notifications'
 import { loadOrdersPage } from '@/modules/orders'
 import { loadWorkspacePage } from '@/modules/workspace'
 import { loadEmployeesPage } from '@/modules/employees'
@@ -27,6 +28,11 @@ export const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         { path: '', redirect: '/workspace' },
+        {
+          path: 'notifications',
+          component: loadNotificationsPage,
+          meta: { title: '通知中心', group: '日常作业' },
+        },
         {
           path: 'orders/:id?',
           component: loadOrdersPage,

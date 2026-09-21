@@ -45,3 +45,5 @@
 PC-2 经营资料管理已实现，见 [阶段契约](../../PC2_CONTRACT.md) 和 [页面验收](../../../admin/design-qa-pc2.md)。
 
 PC-3 订单作业与工作台已实现，见 [阶段契约](../../PC3_CONTRACT.md) 与 [页面验收](../../../admin/design-qa-pc3.md)。
+
+PC-4 通知中心与阅读恢复已实现，见 [阶段契约](../../PC4_CONTRACT.md) 与 [页面验收](../../../admin/design-qa-pc4.md)。

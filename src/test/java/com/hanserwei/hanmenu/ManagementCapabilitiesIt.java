@@ -515,6 +515,13 @@ class ManagementCapabilitiesIt {
             "/api/v1/management/audit-events")) {
       assertThat(root.path("paths").has(path)).isTrue();
     }
+    assertThat(
+            root.path("paths")
+                .path("/api/v1/notifications/stream-tickets")
+                .path("post")
+                .path("parameters")
+                .toString())
+        .doesNotContain("Authorization");
     var schemas = root.path("components").path("schemas");
     assertThat(
             schemas
