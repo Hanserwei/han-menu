@@ -112,3 +112,5 @@ PC-4 已开放实时来单／催单提醒、通知中心及阅读恢复，参见
 PC-5 经营分析与维护已实现，见 [阶段契约](docs/PC5_CONTRACT.md)；管理员可查询资金流水、报表、审计并进行有确认的通知与投影维护。
 
 PC-6 交付验收已实现，见 [阶段契约](docs/PC6_CONTRACT.md) 与 [管理端部署手册](admin/DEPLOYMENT.md)。根门禁新增真实Nginx HTTPS/WSS生产构建验收，需要Podman或Docker与OpenSSL。
+
+本机上手测试已通过Podman部署，访问 [管理端](http://127.0.0.1:18080)。固定数据目录、初始登录信息、启停与备份见 [本机容器部署](docs/LOCAL_CONTAINER_DEPLOYMENT.md)。

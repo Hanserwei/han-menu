@@ -1,0 +1,124 @@
+# 独立的本机上手测试实例；持久化数据全部绑定固定目录，容器停止或重建不删除目录。
+services:
+  database:
+    image: docker.io/library/postgres:18.6
+    container_name: han-menu-app-postgres
+    restart: unless-stopped
+    mem_limit: 1g
+    shm_size: 128m
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - "${HAN_MENU_DATA_ROOT}/postgres:/var/lib/postgresql:Z"
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U postgres -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging:
+      driver: k8s-file
+      options:
+        path: "${HAN_MENU_DATA_ROOT}/logs/postgres.log"
+        max-size: 10mb
+
+  cache:
+    image: docker.io/library/redis:8.10.1-alpine
+    container_name: han-menu-app-redis
+    restart: unless-stopped
+    mem_limit: 512m
+    command: [redis-server, /usr/local/etc/redis.conf]
+    environment:
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+    volumes:
+      - "${HAN_MENU_DATA_ROOT}/redis:/data:Z"
+      - "${HAN_MENU_DATA_ROOT}/config/redis.conf:/usr/local/etc/redis.conf:ro,Z"
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -qx PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging:
+      driver: k8s-file
+      options:
+        path: "${HAN_MENU_DATA_ROOT}/logs/redis.log"
+        max-size: 10mb
+
+  storage:
+    image: docker.io/rustfs/rustfs:1.0.0
+    container_name: han-menu-app-rustfs
+    restart: unless-stopped
+    mem_limit: 2g
+    command: [/data]
+    environment:
+      RUSTFS_ACCESS_KEY: "${RUSTFS_ACCESS_KEY}"
+      RUSTFS_SECRET_KEY: "${RUSTFS_SECRET_KEY}"
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ENABLE: "false"
+      RUSTFS_OBS_LOGGER_LEVEL: error
+    ports:
+      - "127.0.0.1:18090:9000"
+    volumes:
+      - "${HAN_MENU_DATA_ROOT}/rustfs:/data:Z,U"
+    healthcheck:
+      test: [CMD-SHELL, 'curl -fsS http://127.0.0.1:9000/health >/dev/null']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    logging:
+      driver: k8s-file
+      options:
+        path: "${HAN_MENU_DATA_ROOT}/logs/rustfs.log"
+        max-size: 10mb
+
+  backend:
+    image: "${BACKEND_IMAGE}"
+    container_name: han-menu-app-backend
+    restart: unless-stopped
+    mem_limit: 2g
+    env_file:
+      - "${HAN_MENU_DATA_ROOT}/config/backend.env"
+    ports:
+      - "127.0.0.1:18082:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=128m
+    healthcheck:
+      test: [CMD, bash, /app/healthcheck.sh]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    logging:
+      driver: k8s-file
+      options:
+        path: "${HAN_MENU_DATA_ROOT}/logs/backend.log"
+        max-size: 20mb
+
+  frontend:
+    image: "${FRONTEND_IMAGE}"
+    container_name: han-menu-app-frontend
+    restart: unless-stopped
+    # Nginx在宿主网络中只绑定127.0.0.1:18080，保留已验收的回环HTTP模板约束。
+    network_mode: host
+    entrypoint: [nginx]
+    command: [-c, /etc/han-menu/nginx.conf, -g, "daemon off;"]
+    volumes:
+      - "${HAN_MENU_DATA_ROOT}/config/nginx.conf:/etc/han-menu/nginx.conf:ro,Z"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=16m
+      - /var/cache/nginx:rw,size=64m
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:18080/login']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: k8s-file
+      options:
+        path: "${HAN_MENU_DATA_ROOT}/logs/frontend.log"
+        max-size: 10mb

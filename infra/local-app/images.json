@@ -1,0 +1,4 @@
+{
+  "JAVA_IMAGE": "docker.io/library/eclipse-temurin:25-jre-noble@sha256:ac58cdddfb2104865a2841af40dbf6e16f7473024519158aa0392cad33f9e00b",
+  "NGINX_IMAGE": "docker.io/library/nginx:1.30.5-alpine@sha256:89956b8306b7db851b00cc78b32292cc32a848dcc0c48e65ebe20526c9a36019"
+}
