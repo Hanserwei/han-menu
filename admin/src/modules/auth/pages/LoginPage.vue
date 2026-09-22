@@ -128,6 +128,7 @@ onUnmounted(() => {
             block
             :loading="pending"
             :disabled="remaining > 0"
+            :aria-label="remaining ? `${remaining} 秒后重试` : '登录'"
             >{{ remaining ? `${remaining} 秒后重试` : '登录' }}<ArrowRightOutlined v-if="!pending"
           /></Button>
         </Form>

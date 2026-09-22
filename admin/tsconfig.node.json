@@ -5,7 +5,9 @@
     "vitest.config.ts",
     "playwright.config.ts",
     "eslint.config.ts",
-    "e2e/**/*.ts"
+    "e2e/**/*.ts",
+    "playwright.production.config.ts",
+    "e2e-production/**/*.ts"
   ],
   "compilerOptions": {
     "module": "preserve",

@@ -28,7 +28,9 @@ const selected = computed(() =>
     ? '/orders'
     : route.path.startsWith('/customers')
       ? '/customers'
-      : route.path.replace(/\/(?:new|[^/]+\/edit)$/, ''),
+      : route.path.startsWith('/finance/')
+        ? '/' + route.path.split('/').slice(1, 3).join('/')
+        : route.path.replace(/\/(?:new|[^/]+\/edit)$/, ''),
 )
 const openKeys = ref<string[]>([])
 watch(
@@ -39,6 +41,7 @@ watch(
       return
     }
     if (path.startsWith('/catalog/')) openKeys.value = ['catalog']
+    else if (path.startsWith('/finance/')) openKeys.value = ['finance']
     else if (path.startsWith('/settings/')) openKeys.value = ['settings']
   },
   { immediate: true },
@@ -81,6 +84,7 @@ function profile(key: string) {
 }
 </script>
 <template>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
   <div class="app-shell" :class="{ 'is-collapsed': collapsed, 'is-mobile': mobile }">
     <aside v-if="!mobile" class="app-sidebar">
       <RouterLink to="/workspace" class="brand-link" aria-label="HAN MENU 工作台"
@@ -157,7 +161,7 @@ function profile(key: string) {
           /></Button>
         </div>
       </header>
-      <main id="main-content" class="page-content">
+      <main id="main-content" class="page-content" tabindex="-1">
         <RouterView :key="route.path.startsWith('/catalog/') ? route.path : undefined" />
       </main>
     </div>

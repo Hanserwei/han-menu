@@ -11,5 +11,7 @@
 - 新业务请求必须经过统一客户端，401 撤销会话，403 显示权限错误；退出要取消旧请求并清除个人查询缓存。
 - 不将账号密码、手机号、认证头或请求正文写日志。前端环境变量只存公开配置。
 - 状态变更以服务端返回为准，不默认乐观成功；带版本的资源修改必须提交当前版本，409 保留必要输入。
-- 验证命令为 `pnpm verify` 与独立测试库的 `pnpm test:e2e`；仓库根 `scripts/verify.sh` 统一执行后端及前端门禁。
+- 验证命令为 `pnpm verify` 与独立测试库的 `pnpm test:e2e`、`pnpm test:production`；仓库根 `scripts/verify.sh` 统一执行后端及前端门禁。
 - 真实浏览器测试只允许 `_test` 数据库和临时 schema，不使用开发管理员执行改密、停用或造数据。
+
+- 生产交付使用 `deploy/` 中与验收共用的 Nginx 模板；详细发布、HTTPS、缓存与回滚见 `DEPLOYMENT.md`。生产浏览器验收需要 Linux、Podman/Docker 与 OpenSSL。

@@ -16,13 +16,18 @@
     "api:generate": "node scripts/generate-api.mjs",
     "api:check": "node scripts/generate-api.mjs --check",
     "check:boundaries": "node scripts/check-boundaries.mjs",
-    "verify": "pnpm format:check && pnpm api:check && pnpm lint && pnpm check:boundaries && pnpm type-check && pnpm test:unit && pnpm build"
+    "verify": "pnpm format:check && pnpm api:check && pnpm lint && pnpm check:boundaries && pnpm type-check && pnpm test:unit && pnpm test:tools && pnpm build && pnpm check:dist",
+    "test:production": "playwright test --config playwright.production.config.ts",
+    "test:tools": "node --test scripts/*.test.mjs",
+    "check:dist": "node scripts/check-dist.mjs",
+    "release": "pnpm verify && node scripts/package-release.mjs"
   },
   "dependencies": {
     "@antdv-next/icons": "1.1.2",
     "@tanstack/vue-query": "5.103.1",
     "antdv-next": "1.5.4",
     "dayjs": "1.11.23",
+    "echarts": "6.1.0",
     "openapi-fetch": "0.17.0",
     "pinia": "4.0.3",
     "vue": "3.5.43",

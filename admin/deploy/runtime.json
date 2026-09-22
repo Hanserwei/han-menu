@@ -1,0 +1,3 @@
+{
+  "nginxImage": "docker.io/library/nginx:1.30.5-alpine@sha256:89956b8306b7db851b00cc78b32292cc32a848dcc0c48e65ebe20526c9a36019"
+}

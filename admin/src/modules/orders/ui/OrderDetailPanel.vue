@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useSessionStore } from '@/modules/auth'
 import { Button, Tag, Descriptions, DescriptionsItem, Alert, Skeleton } from 'antdv-next'
 import { CloseOutlined, ReloadOutlined } from '@antdv-next/icons'
 import type { OrderDetail, OrderAction } from '../api/orders'
@@ -27,6 +28,7 @@ const props = defineProps<{
   drawer?: boolean
 }>()
 defineEmits<{ close: []; reload: []; act: [action: OrderAction] }>()
+const session = useSessionStore()
 const showPhone = ref(false)
 watch(
   () => props.order?.id,
@@ -158,9 +160,17 @@ const selections = (values?: Record<string, string>) =>
               dateTime(order.expiresAt)
             }}</DescriptionsItem
             ><DescriptionsItem v-if="order.lifecycle?.paymentId" label="支付编号"
-              ><ResourceId :value="order.lifecycle.paymentId" /></DescriptionsItem
+              ><RouterLink
+                v-if="session.identity?.role === 'ADMIN'"
+                :to="`/finance/payments/${order.lifecycle.paymentId}`"
+                >查看支付流水</RouterLink
+              ><ResourceId v-else :value="order.lifecycle.paymentId" /></DescriptionsItem
             ><DescriptionsItem v-if="order.lifecycle?.refundId" label="退款编号"
-              ><ResourceId :value="order.lifecycle.refundId" /></DescriptionsItem
+              ><RouterLink
+                v-if="session.identity?.role === 'ADMIN'"
+                :to="`/finance/refunds/${order.lifecycle.refundId}`"
+                >查看退款流水</RouterLink
+              ><ResourceId v-else :value="order.lifecycle.refundId" /></DescriptionsItem
           ></Descriptions>
         </section>
       </template>

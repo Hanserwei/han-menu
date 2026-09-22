@@ -9,8 +9,12 @@ import { loadShopPage } from '@/modules/shop'
 import { loadCategoriesPage, loadProductsPage, loadProductEditorPage } from '@/modules/catalog'
 import AppShell from '../layouts/AppShell.vue'
 import StatusPage from '../layouts/StatusPage.vue'
-import { futureRoutes } from './navigation'
+import { loadTransactionsPage } from '@/modules/finance'
+import { loadReportsPage, loadReconciliationPage } from '@/modules/reports'
+import { loadAuditPage } from '@/modules/audit'
+import { loadMaintenancePage } from '@/modules/maintenance'
 import { accessGuard } from './access'
+import { recoverPage } from './page-loader'
 
 /** 业务路由携带权限元信息，未登录访问深链接先恢复认证；服务端仍是最终权限边界。 */
 export const router = createRouter({
@@ -19,7 +23,7 @@ export const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: loadLoginPage,
+      component: recoverPage(loadLoginPage),
       meta: { title: '登录' },
     },
     {
@@ -30,24 +34,24 @@ export const router = createRouter({
         { path: '', redirect: '/workspace' },
         {
           path: 'notifications',
-          component: loadNotificationsPage,
+          component: recoverPage(loadNotificationsPage),
           meta: { title: '通知中心', group: '日常作业' },
         },
         {
           path: 'orders/:id?',
-          component: loadOrdersPage,
+          component: recoverPage(loadOrdersPage),
           meta: { title: '订单中心', group: '日常作业' },
         },
         {
           path: 'workspace',
           name: 'workspace',
-          component: loadWorkspacePage,
+          component: recoverPage(loadWorkspacePage),
           meta: { title: '工作台', group: '日常作业' },
         },
         {
           path: 'account',
           name: 'account',
-          component: loadAccountPage,
+          component: recoverPage(loadAccountPage),
           meta: { title: '我的账号', group: '账号' },
         },
         {
@@ -61,29 +65,29 @@ export const router = createRouter({
           ? [
               {
                 path: '_dev/components',
-                component: () => import('../testing/ComponentLab.vue'),
+                component: recoverPage(() => import('../testing/ComponentLab.vue')),
                 meta: { title: '组件验证', admin: true },
               },
             ]
           : []),
         {
           path: 'settings/employees',
-          component: loadEmployeesPage,
+          component: recoverPage(loadEmployeesPage),
           meta: { title: '员工管理', group: '系统管理', admin: true },
         },
         {
           path: 'settings/shop',
-          component: loadShopPage,
+          component: recoverPage(loadShopPage),
           meta: { title: '门店设置', group: '系统管理', admin: true },
         },
         {
           path: 'customers/:id?',
-          component: loadCustomersPage,
+          component: recoverPage(loadCustomersPage),
           meta: { title: '顾客管理', group: '经营管理', admin: true },
         },
         {
           path: 'catalog/categories',
-          component: loadCategoriesPage,
+          component: recoverPage(loadCategoriesPage),
           meta: { title: '分类管理', group: '商品管理', admin: true },
         },
         ...(['dishes', 'meals'] as const).flatMap((segment) => {
@@ -92,30 +96,54 @@ export const router = createRouter({
           return [
             {
               path: `catalog/${segment}`,
-              component: loadProductsPage,
+              component: recoverPage(loadProductsPage),
               props: { kind },
               meta: { title: `${label}管理`, group: '商品管理', admin: true },
             },
             {
               path: `catalog/${segment}/new`,
-              component: loadProductEditorPage,
+              component: recoverPage(loadProductEditorPage),
               props: { kind },
               meta: { title: `新增${label}`, group: '商品管理', admin: true },
             },
             {
               path: `catalog/${segment}/:id/edit`,
-              component: loadProductEditorPage,
+              component: recoverPage(loadProductEditorPage),
               props: { kind },
               meta: { title: `编辑${label}`, group: '商品管理', admin: true },
             },
           ]
         }),
-        ...futureRoutes.map((route) => ({
-          path: route.path.slice(1),
-          component: StatusPage,
-          props: { kind: 'upcoming' },
-          meta: { title: route.title, admin: route.admin },
-        })),
+        {
+          path: 'finance/payments/:id?',
+          component: recoverPage(loadTransactionsPage),
+          meta: { title: '支付流水', group: '经营管理', admin: true },
+        },
+        {
+          path: 'finance/refunds/:id?',
+          component: recoverPage(loadTransactionsPage),
+          meta: { title: '退款流水', group: '经营管理', admin: true },
+        },
+        {
+          path: 'finance/reconciliation',
+          component: recoverPage(loadReconciliationPage),
+          meta: { title: '资金对账', group: '经营管理', admin: true },
+        },
+        {
+          path: 'reports',
+          component: recoverPage(loadReportsPage),
+          meta: { title: '经营分析', group: '经营管理', admin: true },
+        },
+        {
+          path: 'settings/audit',
+          component: recoverPage(loadAuditPage),
+          meta: { title: '安全审计', group: '系统管理', admin: true },
+        },
+        {
+          path: 'settings/maintenance',
+          component: recoverPage(loadMaintenancePage),
+          meta: { title: '系统维护', group: '系统管理', admin: true },
+        },
         {
           path: ':pathMatch(.*)*',
           component: StatusPage,

@@ -1,0 +1,76 @@
+# 完整配置，通过 render-nginx.mjs 生成；同一模板用于生产验收与实际部署。
+worker_processes auto;
+pid /tmp/han-menu-nginx.pid;
+# 普通上游故障使用下方不含查询参数的访问日志，不输出含电话筛选的完整请求行。
+error_log /dev/stderr crit;
+events { worker_connections 1024; }
+http {
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+  server_tokens off;
+  log_format safe '$remote_addr $request_method $uri $status $request_time';
+  access_log /dev/stdout safe;
+  map $http_upgrade $connection_upgrade { default upgrade; '' close; }
+  sendfile on;
+  gzip on;
+  gzip_types text/css application/javascript application/json image/svg+xml;
+  server {
+    listen {{LISTEN}};
+    server_name {{SERVER_NAME}};
+    {{TLS}}
+    root {{ROOT}};
+    index index.html;
+    client_max_body_size 6m;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy same-origin always;
+
+    # 不改写路径、Origin或WebSocket子协议。渠道与业务写请求绝不由代理自动重发。
+    location ^~ /api/ {
+      proxy_pass http://{{BACKEND}};
+      proxy_http_version 1.1;
+      proxy_set_header Host $http_host;
+      proxy_set_header Forwarded "";
+      proxy_set_header X-Forwarded-Host $host;
+      proxy_set_header X-Forwarded-Port $server_port;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header X-Forwarded-For $remote_addr;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection $connection_upgrade;
+      proxy_connect_timeout 5s;
+      proxy_read_timeout 210s;
+      proxy_send_timeout 210s;
+      proxy_buffering off;
+      proxy_next_upstream off;
+      proxy_intercept_errors off;
+      error_page 502 504 =503 @api_unavailable;
+    }
+    location @api_unavailable {
+      default_type application/problem+json;
+      add_header Cache-Control no-store always;
+      return 503 '{"type":"about:blank","title":"服务暂不可用","status":503,"detail":"无法连接服务，请稍后重试","code":"UPSTREAM_UNAVAILABLE"}';
+    }
+    location = /api { return 404; }
+    location ~ (^|/)\. { return 404; }
+    location ~ ^/(src|node_modules|actuator|swagger-ui|v3)(/|$) { return 404; }
+    location ^~ /assets/ {
+      try_files $uri =404;
+      add_header Cache-Control "public, max-age=31536000, immutable";
+      add_header X-Content-Type-Options nosniff always;
+    }
+    location = /index.html {
+      add_header Cache-Control no-store always;
+      add_header X-Content-Type-Options nosniff always;
+      add_header X-Frame-Options DENY always;
+      add_header Referrer-Policy same-origin always;
+    }
+    # HTML入口不缓存；缺失分包只能404，不允许回退成HTML。
+    location / {
+      add_header Cache-Control no-store always;
+      add_header X-Content-Type-Options nosniff always;
+      add_header X-Frame-Options DENY always;
+      add_header Referrer-Policy same-origin always;
+      try_files $uri $uri/ /index.html;
+    }
+  }
+}

@@ -108,3 +108,7 @@ PC-2 已开放员工、顾客、商品目录与门店管理，参见 [PC-2 契�
 PC-3 已开放订单作业闭环与工作台待办，参见 [PC-3 契约](docs/PC3_CONTRACT.md)。
 
 PC-4 已开放实时来单／催单提醒、通知中心及阅读恢复，参见 [PC-4 契约](docs/PC4_CONTRACT.md)。
+
+PC-5 经营分析与维护已实现，见 [阶段契约](docs/PC5_CONTRACT.md)；管理员可查询资金流水、报表、审计并进行有确认的通知与投影维护。
+
+PC-6 交付验收已实现，见 [阶段契约](docs/PC6_CONTRACT.md) 与 [管理端部署手册](admin/DEPLOYMENT.md)。根门禁新增真实Nginx HTTPS/WSS生产构建验收，需要Podman或Docker与OpenSSL。

@@ -17,6 +17,7 @@ export default defineConfig({
       command: 'node scripts/e2e-server.mjs',
       url: 'http://127.0.0.1:18081/actuator/health',
       reuseExistingServer: false,
+      gracefulShutdown: { signal: 'SIGTERM', timeout: 30000 },
       timeout: 120000,
     },
     {
@@ -24,6 +25,7 @@ export default defineConfig({
       url: 'http://127.0.0.1:15173',
       env: { ADMIN_API_TARGET: 'http://127.0.0.1:18081' },
       reuseExistingServer: false,
+      gracefulShutdown: { signal: 'SIGTERM', timeout: 30000 },
     },
   ],
 })

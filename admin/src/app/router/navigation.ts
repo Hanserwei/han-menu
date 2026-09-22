@@ -11,13 +11,7 @@ import {
 } from '@antdv-next/icons'
 import type { MenuProps } from 'antdv-next'
 
-/** 导航是前端展示能力清单；后续业务页面未交付前不伪装为可操作入口。 */
-export const futureRoutes = [
-  { path: '/finance/payments', title: '支付与退款', admin: true },
-  { path: '/reports', title: '经营分析', admin: true },
-  { path: '/settings/audit', title: '安全审计', admin: true },
-  { path: '/settings/maintenance', title: '系统维护', admin: true },
-]
+/** 导航只展示当前角色已交付的页面；服务端继续校验实际权限。 */
 export function navigationItems(administrator: boolean): MenuProps['items'] {
   const items: MenuProps['items'] = [
     {
@@ -61,18 +55,19 @@ export function navigationItems(administrator: boolean): MenuProps['items'] {
             icon: () => h(TeamOutlined),
           },
           {
-            key: '/finance/payments',
+            key: 'finance',
             label: '支付与退款',
             icon: () => h(CreditCardOutlined),
-            disabled: true,
-            title: '暂未开放',
+            children: [
+              { key: '/finance/payments', label: '支付流水' },
+              { key: '/finance/refunds', label: '退款流水' },
+              { key: '/finance/reconciliation', label: '资金对账' },
+            ],
           },
           {
             key: '/reports',
             label: '经营分析',
             icon: () => h(BarChartOutlined),
-            disabled: true,
-            title: '暂未开放',
           },
         ],
       },
@@ -84,14 +79,8 @@ export function navigationItems(administrator: boolean): MenuProps['items'] {
         children: [
           { key: '/settings/shop', label: '门店设置' },
           { key: '/settings/employees', label: '员工管理' },
-          ...futureRoutes
-            .filter((item) => item.path.startsWith('/settings/'))
-            .map((item) => ({
-              key: item.path,
-              label: item.title,
-              disabled: true,
-              title: '暂未开放',
-            })),
+          { key: '/settings/audit', label: '安全审计' },
+          { key: '/settings/maintenance', label: '系统维护' },
         ],
       },
     )

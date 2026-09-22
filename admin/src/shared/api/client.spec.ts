@@ -105,3 +105,39 @@ describe('员工 HTTP 边界', () => {
     ).not.toContain('secret')
   })
 })
+
+describe('维护与下载超时边界', () => {
+  it.each([
+    ['/api/v1/reports/projection/rebuild', 'POST', 195_000],
+    ['/api/v1/reports/export?from=2026-09-01&to=2026-09-22', 'GET', 60_000],
+    ['/api/v1/reports/projection', 'GET', 15_000],
+  ])('只给 %s 配置相应等待上限', async (path, method, timeout) => {
+    vi.useFakeTimers()
+    try {
+      const bridge = new SessionBridge()
+      bridge.replace('test-session')
+      const transport = vi.fn<typeof fetch>().mockImplementation(
+        (input) =>
+          new Promise((_resolve, reject) => {
+            const request = input as Request
+            request.signal.addEventListener(
+              'abort',
+              () => reject(new DOMException('aborted', 'AbortError')),
+              { once: true },
+            )
+          }),
+      )
+      const promise = authenticatedFetch(
+        bridge,
+        transport,
+      )(new Request('http://localhost' + path, { method }))
+      const rejected = expect(promise).rejects.toMatchObject({ code: 'TIMEOUT' })
+      await vi.advanceTimersByTimeAsync(timeout - 1)
+      expect((transport.mock.calls[0]![0] as Request).signal.aborted).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      await rejected
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

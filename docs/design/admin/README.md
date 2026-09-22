@@ -47,3 +47,7 @@ PC-2 经营资料管理已实现，见 [阶段契约](../../PC2_CONTRACT.md) 和
 PC-3 订单作业与工作台已实现，见 [阶段契约](../../PC3_CONTRACT.md) 与 [页面验收](../../../admin/design-qa-pc3.md)。
 
 PC-4 通知中心与阅读恢复已实现，见 [阶段契约](../../PC4_CONTRACT.md) 与 [页面验收](../../../admin/design-qa-pc4.md)。
+
+PC-5 经营分析与维护已实现，见 [阶段契约](../../PC5_CONTRACT.md) 与 [页面验收](../../../admin/design-qa-pc5.md)。
+
+PC-6 生产构建与三档桌面验收见 [交付契约](../../PC6_CONTRACT.md) 与 [验收记录](../../../admin/design-qa-pc6.md)。

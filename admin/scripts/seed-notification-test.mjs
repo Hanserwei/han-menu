@@ -39,6 +39,18 @@ try {
       `INSERT INTO notification_notice(id,sequence,order_id,kind,occurred_at,created_at,status,attempts,failures,next_attempt_at,version) VALUES($1,$2,$3,$4,now(),now(),'PENDING',0,0,now(),0)`,
       [id, sequence, orderId, kind],
     )
+    if (options.exhausted) {
+      await database.query(
+        "UPDATE notification_notice SET status='EXHAUSTED',attempts=5,failures=5,next_attempt_at=NULL,last_failure='NO_SUBSCRIBERS' WHERE id=$1",
+        [id],
+      )
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await database.query(
+          "INSERT INTO notification_attempt(id,notice_id,started_at,finished_at,status,sent,failed,failure) VALUES($1,$2,now(),now(),'FAILED',0,0,'NO_SUBSCRIBERS')",
+          [randomUUID(), id],
+        )
+      }
+    }
     items.push({ id, sequence, orderId, type: kind })
   }
   await database.query('UPDATE notification_feed SET sequence=$1 WHERE id=1', [start + count])

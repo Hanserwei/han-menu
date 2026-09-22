@@ -15,7 +15,14 @@ export function authenticatedFetch(bridge: SessionBridge, transport: typeof fetc
       url.pathname === '/api/v1/storefront' ||
       (url.pathname === '/api/v1/sessions' && request.method === 'POST')
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort('timeout'), 15000)
+    // 重建允许服务端完成最长180秒事务；超时后页面必须先查询结果，不能自动重发。
+    const timeoutMs =
+      request.method === 'POST' && url.pathname === '/api/v1/reports/projection/rebuild'
+        ? 195_000
+        : url.pathname === '/api/v1/reports/export'
+          ? 60_000
+          : 15_000
+    const timeout = setTimeout(() => controller.abort('timeout'), timeoutMs)
     const headers = new Headers(request.headers)
     headers.delete('Authorization')
     if (!publicRequest && session.token) headers.set('Authorization', `Bearer ${session.token}`)

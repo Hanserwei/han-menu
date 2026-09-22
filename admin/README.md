@@ -1,6 +1,6 @@
 # HAN MENU 管理端
 
-PC-1 身份基础、PC-2 经营资料、PC-3 订单作业及 PC-4 实时通知，Vue 3 + TypeScript + antdv-next。独立 pnpm 工程，构建产物是 `dist/`；后端仍单独打包 JAR。
+PC-1 身份基础、PC-2 经营资料、PC-3 订单作业、PC-4 实时通知、PC-5 经营分析与维护及 PC-6 交付验收，Vue 3 + TypeScript + antdv-next。独立 pnpm 工程，构建产物是 `dist/`；后端仍单独打包 JAR。
 
 ## 当前能力
 
@@ -10,7 +10,7 @@ PC-1 身份基础、PC-2 经营资料、PC-3 订单作业及 PC-4 实时通知�
 - 真实工作台及门店摘要；员工、顾客、分类、菜品、套餐、图片关联与门店管理已开放。
 - 订单检索、快照详情、接单／拒单／取消／配送／完成、工作台待办与顾客关联订单已开放。
 - 来单／催单实时提示、通知补查、本人阅读确认、断线恢复及HTTP降级已开放。
-- 报表、资金与管理员通知投递诊断按后续阶段推进。
+- 支付与退款流水、经营分析、销量、资金对账、后端 XLSX 导出、安全审计、通知投递诊断和投影重建已开放。
 - 开发模式 `/_dev/components` 提供 Table/Form/DatePicker/Upload/Drawer 兼容性验收；生产构建不包含此路由和页面。
 
 ## 环境与启动
@@ -48,6 +48,10 @@ src/
     employees/            # 员工资料与启停用
     customers/            # 顾客档案查询与启停用
     shop/                 # 门店资料与营业状态
+    finance/              # 管理员支付与退款流水及引用追踪
+    reports/              # 经营报表、按需图表、销量、对账与XLSX
+    audit/                # 身份安全审计只读检索
+    maintenance/          # 通知投递轨迹、重投与统计投影维护
   shared/
     api/                  # 生成类型、统一传输、Problem、会话端口、查询客户端
     ui/                   # 与业务无关的公共界面
@@ -117,3 +121,10 @@ PC-3 行为与测试边界见 [阶段契约](../docs/PC3_CONTRACT.md)；付款�
 
 PC-4 详见 [阶段契约](../docs/PC4_CONTRACT.md)。开发后端配置 `NOTIFICATION_ALLOWED_ORIGINS=http://127.0.0.1:5173`，
 前端Origin必须与实际访问地址一致；后台任务启用后提供真实推送和员工会话撤销检查。
+
+PC-5 行为与验证见 [阶段契约](../docs/PC5_CONTRACT.md)。ECharts 6.1.0 使用官方按需导入，图表代码只在经营分析页加载。
+反向代理的投影重建请求超时应覆盖后端最长180秒事务（建议不低于195秒）；网络中断后先查询投影状态，不能自动重发命令。
+
+PC-6 已补齐生产dist的HTTPS/WSS、桌面与错误恢复验收，见 [阶段契约](../docs/PC6_CONTRACT.md)。
+生产部署与可校验发布包见 [DEPLOYMENT.md](DEPLOYMENT.md)：`pnpm release` 生成白名单静态交付包；
+`pnpm test:production` 使用真实Nginx，需要Linux、Podman或Docker、OpenSSL。根门禁自动执行开发与生产两轮浏览器测试。

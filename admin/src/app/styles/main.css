@@ -948,3 +948,51 @@ p {
     align-items: flex-start;
   }
 }
+
+/* PC-5 报表与诊断沿用经营台留白，表格在容器内横向滚动。 */
+.section-gap {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+.report-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 28px;
+  padding: 12px 0;
+}
+.surface-section {
+  min-width: 0;
+}
+.filter-bar .ant-select {
+  min-width: 128px;
+}
+.ant-descriptions-item-content {
+  overflow-wrap: anywhere;
+}
+
+.report-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+}
+.report-metrics small {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+/* 键盘用户可以跳过重复导航；仅在焦点进入时显示。 */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 16px;
+  z-index: 2000;
+  padding: 10px 16px;
+  background: #fff;
+  border: 2px solid var(--primary);
+  transform: translateY(-150%);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+.page-load-failure {
+  padding: 24px;
+}

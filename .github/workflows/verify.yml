@@ -45,6 +45,7 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     env:
+      ADMIN_CONTAINER_RUNTIME: docker
       RUSTFS_ENDPOINT: http://127.0.0.1:9000
       RUSTFS_ACCESS_KEY: ci-han-menu-access
       RUSTFS_SECRET_KEY: ci-han-menu-secret-for-tests
@@ -70,6 +71,12 @@ jobs:
       - run: pnpm --dir admin install --frozen-lockfile
       - run: pnpm --dir admin exec playwright install --with-deps chromium
       - run: ./scripts/verify.sh
+      - run: pnpm --dir admin exec node scripts/package-release.mjs
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: admin-release
+          path: admin/.local/releases/*.tar.gz*
+          include-hidden-files: true
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:

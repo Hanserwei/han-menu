@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { useSessionStore } from '@/modules/auth'
 import { App, Button, Table, Tag, Alert, Skeleton } from 'antdv-next'
 import { ReloadOutlined } from '@antdv-next/icons'
 import { useNotificationsStore } from '../model/notifications.store'
@@ -14,6 +15,7 @@ import ResourceId from '@/shared/ui/ResourceId.vue'
 import ProblemAlert from '@/shared/ui/ProblemAlert.vue'
 import { useEditorGuard } from '@/shared/model/use-editor-guard'
 
+const session = useSessionStore()
 const store = useNotificationsStore(),
   router = useRouter(),
   { modal, message } = App.useApp()
@@ -61,7 +63,7 @@ const columns = [
   { title: '订单编号', key: 'order', width: 215 },
   { title: '发生时间', key: 'time', width: 180 },
   { title: '阅读状态', key: 'read', width: 120 },
-  { title: '操作', key: 'actions', width: 110 },
+  { title: '操作', key: 'actions', width: session.identity?.role === 'ADMIN' ? 220 : 110 },
 ]
 /** 页面快照与后台拉取独立；新帧不改变当前确认范围，翻页只使用上一完整响应的游标。 */
 async function load() {
@@ -269,6 +271,17 @@ onBeforeUnmount(() => {
           :disabled="busy"
           @click="router.push(`/orders/${record.orderId}`)"
           >查看订单</Button
+        ><Button
+          v-if="column.key === 'actions' && session.identity?.role === 'ADMIN'"
+          type="link"
+          :disabled="busy"
+          @click="
+            router.push({
+              path: '/settings/maintenance',
+              query: { noticeId: record.id, sequence: String(record.sequence) },
+            })
+          "
+          >投递轨迹</Button
         >
       </template></Table
     >
