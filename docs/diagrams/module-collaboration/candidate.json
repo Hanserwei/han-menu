@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Han Menu · 订单驱动的模块协作",
+    "locale": "zh-CN",
+    "output": "docs/diagrams/module-collaboration/module-collaboration.html",
+    "quality_profile": "showcase",
+    "repository": {"url": "git@github.com:Hanserwei/han-menu.git", "revision": "95431d18ac78fd9fc45a88a6e716783b928654d4", "link_mode": "local-only"}
+  },
+  "components": [
+    {
+      "id": "checkout-providers", "type": "backend", "label": "结算公开契约", "sublabel": "customer · shop · catalog · cart", "pos": [40, 210], "size": [220, 76],
+      "sources": [{"path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java", "line": 67, "end_line": 126}]
+    },
+    {
+      "id": "ordering", "type": "backend", "label": "ordering", "sublabel": "订单快照 · 状态与履约", "pos": [440, 210], "size": [180, 76],
+      "sources": [{"path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java", "line": 67, "end_line": 126}, {"path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderLifecycleService.java", "line": 48, "end_line": 83}, {"path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderLifecycleService.java", "line": 117, "end_line": 141}]
+    },
+    {
+      "id": "identity", "type": "security", "label": "identity", "sublabel": "员工会话 · 当前权限", "pos": [440, 40], "size": [180, 68],
+      "sources": [{"path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderLifecycleService.java", "line": 76, "end_line": 83}, {"path": "docs/ARCHITECTURE.md", "line": 95, "end_line": 100}]
+    },
+    {
+      "id": "payment", "type": "backend", "label": "payment", "sublabel": "沙箱支付 · 全额退款", "pos": [850, 210], "size": [180, 76],
+      "sources": [{"path": "src/main/java/com/hanserwei/hanmenu/payment/application/PaymentTransactions.java", "line": 200, "end_line": 209}, {"path": "src/main/java/com/hanserwei/hanmenu/payment/application/PaymentTransactions.java", "line": 235, "end_line": 240}, {"path": "src/main/java/com/hanserwei/hanmenu/payment/infrastructure/AlipaySandboxGateway.java", "line": 117, "end_line": 158}]
+    },
+    {
+      "id": "event-registry", "type": "messagebus", "label": "JPA 事件登记", "sublabel": "Modulith · PostgreSQL", "pos": [440, 440], "size": [180, 76], "tag": "同事务登记 / 失败重投",
+      "sources": [{"path": "src/main/resources/db/migration/V2__application_event_publications.sql", "line": 1, "end_line": 13}, {"path": "src/main/java/com/hanserwei/hanmenu/EventRecoveryConfiguration.java", "line": 11, "end_line": 31}, {"path": "src/main/java/com/hanserwei/hanmenu/ordering/application/PaymentResultListener.java", "line": 8, "end_line": 24}]
+    },
+    {
+      "id": "notification", "type": "backend", "label": "notification", "sublabel": "通知落库 · 推送 · 已读", "pos": [40, 440], "size": [220, 76],
+      "sources": [{"path": "src/main/java/com/hanserwei/hanmenu/notification/application/OrderNotificationListener.java", "line": 9, "end_line": 26}]
+    },
+    {
+      "id": "reporting", "type": "backend", "label": "reporting", "sublabel": "经营投影 · 报表 · 导出", "pos": [850, 440], "size": [180, 76],
+      "sources": [{"path": "src/main/java/com/hanserwei/hanmenu/reporting/application/ReportingEventListener.java", "line": 19, "end_line": 43}, {"path": "docs/ARCHITECTURE.md", "line": 155, "end_line": 158}]
+    }
+  ],
+  "connections": [
+    {"id": "checkout-contracts", "from": "ordering", "to": "checkout-providers", "label": "同事务结算", "variant": "emphasis"},
+    {"id": "staff-authorization", "from": "ordering", "to": "identity", "label": "履约鉴权", "variant": "security"},
+    {"id": "payment-contract", "from": "ordering", "to": "payment", "label": "支付 / 退款 API", "variant": "emphasis"},
+    {"id": "order-facts", "from": "ordering", "to": "event-registry", "label": "订单事实", "variant": "dashed"},
+    {"id": "payment-facts", "from": "payment", "to": "event-registry", "label": "支付 / 退款事实", "variant": "dashed"},
+    {"id": "consume-payment", "from": "event-registry", "to": "ordering", "label": "支付结果", "variant": "dashed"},
+    {"id": "notify-orders", "from": "event-registry", "to": "notification", "label": "来单 / 催单", "variant": "dashed"},
+    {"id": "project-reports", "from": "event-registry", "to": "reporting", "label": "经营事实", "variant": "dashed"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "按订单链路聚合", "items": ["结算公开契约汇总顾客、门店、目录与购物车四个模块。", "图示核心运行协作；通用鉴权和投影重建读取依赖未逐一展开。"]},
+    {"dot": "emerald", "title": "事务与事件", "items": ["绿色边为同进程业务调用，紫色虚线为持久化事件，红色边为鉴权。", "事件登记与业务变更原子提交；异步消费者独立事务、幂等处理。", "事件登记使用数据库表，不需要独立消息中间件。"]},
+    {"dot": "rose", "title": "支付方向", "items": ["ordering 调用 payment；payment 不反向导入订单内部类型。", "只有确认付款首次进入 PAID，订单才发布来单事件。", "沙箱网络请求在事务外执行；退款确认后才完成取消。"]}
+  ]
+}
