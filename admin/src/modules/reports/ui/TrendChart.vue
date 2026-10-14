@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { init, use, type EChartsType } from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, AriaComponent } from 'echarts/components'
@@ -12,6 +12,7 @@ const props = defineProps<{
   label: string
 }>()
 const container = ref<HTMLElement>()
+const ariaLabel = computed(() => `${props.label}趋势，详细数值见经营日账`)
 let chart: EChartsType | undefined, observer: ResizeObserver | undefined
 let resizeFrame = 0
 function render() {
@@ -19,7 +20,8 @@ function render() {
     {
       animation: false,
       color: ['#466957'],
-      aria: { enabled: true },
+      // Vue 与 ECharts 共用描述，避免首次渲染和尺寸调整覆盖可访问名称。
+      aria: { enabled: true, label: { description: ariaLabel.value } },
       tooltip: { trigger: 'axis', renderMode: 'richText' },
       grid: { left: 65, right: 24, top: 35, bottom: 35 },
       xAxis: {
@@ -67,12 +69,7 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <div
-    ref="container"
-    class="report-chart"
-    role="img"
-    :aria-label="`${label}趋势，详细数值见经营日账`"
-  />
+  <div ref="container" class="report-chart" role="img" :aria-label="ariaLabel" />
 </template>
 <style scoped>
 .report-chart {

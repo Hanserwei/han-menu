@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "管理端通知 · 实时提示与 HTTP 阅读恢复",
+    "locale": "zh-CN",
+    "output": "docs/diagrams/notification-recovery/notification-recovery.html",
+    "quality_profile": "showcase",
+    "repository": {"url": "git@github.com:Hanserwei/han-menu.git", "revision": "95431d18ac78fd9fc45a88a6e716783b928654d4", "link_mode": "local-only"}
+  },
+  "participants": [
+    {"id": "staff", "type": "external", "label": "当前员工", "sublabel": "明确确认本页", "sources": [{"path": "admin/src/modules/notifications/pages/NotificationsPage.vue", "line": 125, "end_line": 157}]},
+    {"id": "runtime", "type": "frontend", "label": "通知运行器", "sublabel": "唯一连接 / 内存 cursor", "sources": [{"path": "admin/src/modules/notifications/model/notification-runtime.ts", "line": 85, "end_line": 111}, {"path": "admin/src/modules/notifications/model/notification-runtime.ts", "line": 181, "end_line": 242}, {"path": "admin/src/modules/notifications/model/notification-runtime.ts", "line": 263, "end_line": 371}]},
+    {"id": "http", "type": "backend", "label": "通知 HTTP API", "sublabel": "权威页面 / receipt", "sources": [{"path": "admin/src/modules/notifications/api/notifications.ts", "line": 5, "end_line": 26}]},
+    {"id": "stream", "type": "messagebus", "label": "通知 WebSocket", "sublabel": "同源 / 一次性票据", "sources": [{"path": "admin/src/modules/notifications/model/notifications.store.ts", "line": 9, "end_line": 25}, {"path": "admin/src/modules/notifications/model/protocol.ts", "line": 85, "end_line": 103}]}
+  ],
+  "segments": [
+    {"from": 144, "to": 430, "label": "启动：HTTP 同步与取票连接并行"},
+    {"from": 445, "to": 656, "label": "实时帧只提示补查，HTTP 逐页追赶"},
+    {"from": 675, "to": 910, "label": "用户确认才写已读，冲突先重读"}
+  ],
+  "messages": [
+    {"id": "start", "from": "staff", "to": "runtime", "y": 174, "label": "身份验证后启动", "variant": "emphasis"},
+    {"id": "receipt-read", "from": "runtime", "to": "http", "y": 211, "label": "GET receipt", "note": "启动即同步，不等待连接成功"},
+    {"id": "receipt", "from": "http", "to": "runtime", "y": 273, "label": "sequence / version", "variant": "return"},
+    {"id": "ticket-request", "from": "runtime", "to": "http", "y": 310, "label": "POST stream-tickets", "variant": "security"},
+    {"id": "ticket-return", "from": "http", "to": "runtime", "y": 345, "label": "一次性票据", "variant": "return"},
+    {"id": "connect", "from": "runtime", "to": "stream", "y": 380, "label": "业务子协议 + ticket", "variant": "security"},
+    {"id": "ready", "from": "stream", "to": "runtime", "y": 418, "label": "READY 才标记已连接", "variant": "return"},
+    {"id": "hint", "from": "stream", "to": "runtime", "y": 480, "label": "来单 / 催单提示", "variant": "dashed", "note": "帧不推进 cursor 或已读进度"},
+    {"id": "catch-up", "from": "runtime", "to": "http", "y": 546, "label": "GET notices(after=cursor)", "variant": "emphasis"},
+    {"id": "page", "from": "http", "to": "runtime", "y": 586, "label": "连续页 + nextCursor", "variant": "return", "note": "校验整页后更新 cursor；hasMore 时继续"},
+    {"id": "explicit-read", "from": "staff", "to": "runtime", "y": 711, "label": "确认当前连续页", "variant": "emphasis"},
+    {"id": "ack", "from": "runtime", "to": "http", "y": 752, "label": "PUT receipt(seq, version)", "variant": "emphasis", "note": "只确认当前页末位置；先检查页面仍有效"},
+    {"id": "ack-result", "from": "http", "to": "runtime", "y": 817, "label": "新 receipt 或 409", "variant": "return"},
+    {"id": "conflict-refresh", "from": "runtime", "to": "http", "y": 853, "label": "冲突 / 结果未知：GET 重读", "note": "先同步，再由用户重读确认；不自动重发 PUT"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "两种进度", "items": ["cursor 是 HTTP 已验证拉取位置，只在运行器内存维护。", "receipt 是服务端本人已读进度及版本；获取消息不自动确认已读。", "时序纵向表示逻辑顺序，不表示实测耗时；启动两条任务并行。"]},
+    {"dot": "emerald", "title": "断线也能补查", "items": ["READY、实时帧、重新上线和页面可见性变化均可触发同步。", "HTTP 前台约 15 秒、隐藏约 60 秒补查；逐页验证连续序号。", "每次重连重新取票，指数退避；旧会话退出即销毁连接与请求。"]},
+    {"dot": "rose", "title": "并发与结果未知", "items": ["本地页面过期直接拒绝 PUT；用户显式重读后重新确认。", "服务端 409 或 PUT 结果未知先同步权威状态，页面锁定重复确认。", "后台新消息不会偷偷扩大当前页面的已读确认范围。"]}
+  ]
+}

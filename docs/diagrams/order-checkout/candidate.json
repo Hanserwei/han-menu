@@ -1,0 +1,605 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "顾客幂等下单与原单重试",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": "docs/diagrams/order-checkout/order-checkout.html",
+    "repository": {
+      "url": "git@github.com:Hanserwei/han-menu.git",
+      "revision": "95431d18ac78fd9fc45a88a6e716783b928654d4",
+      "link_mode": "local-only"
+    }
+  },
+  "lanes": [
+    {
+      "id": "checkout",
+      "label": "下单短事务 · ordering 经公开 API 协调 customer / shop / cart / catalog"
+    },
+    {
+      "id": "pay",
+      "label": "待支付 · 短事务登记意图，事务外签发参数"
+    }
+  ],
+  "mainPath": [
+    "request",
+    "lock",
+    "lookup",
+    "address",
+    "shop",
+    "selected",
+    "quote",
+    "snapshot",
+    "persist",
+    "settle",
+    "event",
+    "unpaid"
+  ],
+  "nodes": [
+    {
+      "id": "request",
+      "lane": "checkout",
+      "col": 1,
+      "type": "frontend",
+      "label": "首次提交／网络重试",
+      "sublabel": "POST /api/v1/orders",
+      "yOffset": -605,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/web/app/OrderController.java",
+          "line": 42,
+          "end_line": 59
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 177,
+          "end_line": 202
+        }
+      ],
+      "tag": "标识、版本、条目及幂等键"
+    },
+    {
+      "id": "lock",
+      "lane": "checkout",
+      "col": 1,
+      "type": "security",
+      "label": "校验请求与顾客",
+      "sublabel": "锁顾客并重验有效身份",
+      "yOffset": -495,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 67,
+          "end_line": 79
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/customer/application/CustomerCheckoutService.java",
+          "line": 26,
+          "end_line": 35
+        }
+      ],
+      "tag": "键 1–128 字符；条目不重复"
+    },
+    {
+      "id": "lookup",
+      "lane": "checkout",
+      "col": 1,
+      "type": "database",
+      "label": "按顾客＋键查重",
+      "sublabel": "SHA-256 规范化请求",
+      "yOffset": -385,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 67,
+          "end_line": 80
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 177,
+          "end_line": 202
+        }
+      ],
+      "tag": "地址及购物车版本进入摘要"
+    },
+    {
+      "id": "same",
+      "lane": "checkout",
+      "col": 3,
+      "type": "security",
+      "label": "比较原请求摘要",
+      "sublabel": "忽略条目排列顺序",
+      "yOffset": -385,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 73,
+          "end_line": 79
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 114,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "replayed",
+      "lane": "checkout",
+      "col": 5,
+      "type": "backend",
+      "label": "返回原订单",
+      "sublabel": "200 · Replayed=true",
+      "yOffset": -385,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 73,
+          "end_line": 79
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/web/app/OrderController.java",
+          "line": 42,
+          "end_line": 59
+        }
+      ],
+      "tag": "已取消也返回当前详情"
+    },
+    {
+      "id": "conflict",
+      "lane": "checkout",
+      "col": 3,
+      "type": "security",
+      "label": "拒绝复用幂等键",
+      "sublabel": "IDEMPOTENCY_CONFLICT",
+      "yOffset": -265,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 114,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "address",
+      "lane": "checkout",
+      "col": 1,
+      "type": "security",
+      "label": "校验地址",
+      "sublabel": "本人地址＋当前地址版本",
+      "yOffset": -275,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 80,
+          "end_line": 84
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/customer/application/CustomerCheckoutService.java",
+          "line": 32,
+          "end_line": 45
+        }
+      ]
+    },
+    {
+      "id": "shop",
+      "lane": "checkout",
+      "col": 1,
+      "type": "security",
+      "label": "锁门店并校验营业",
+      "sublabel": "数据库状态必须 OPEN",
+      "yOffset": -165,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 80,
+          "end_line": 84
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/shop/application/ShopService.java",
+          "line": 32,
+          "end_line": 37
+        }
+      ]
+    },
+    {
+      "id": "selected",
+      "lane": "checkout",
+      "col": 1,
+      "type": "security",
+      "label": "读取所选购物车项",
+      "sublabel": "版本匹配且全部条目存在",
+      "yOffset": -55,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/cart/application/CartCheckoutService.java",
+          "line": 38,
+          "end_line": 55
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/cart/domain/ShoppingCart.java",
+          "line": 82,
+          "end_line": 103
+        }
+      ]
+    },
+    {
+      "id": "quote",
+      "lane": "checkout",
+      "col": 1,
+      "type": "security",
+      "label": "锁目录并重新报价",
+      "sublabel": "可售商品、分类及口味",
+      "yOffset": 55,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/catalog/application/CatalogCheckoutService.java",
+          "line": 26,
+          "end_line": 51
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/catalog/application/PublicCatalog.java",
+          "line": 68,
+          "end_line": 80
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 85,
+          "end_line": 107
+        }
+      ],
+      "tag": "套餐组成逐项检查"
+    },
+    {
+      "id": "snapshot",
+      "lane": "checkout",
+      "col": 1,
+      "type": "backend",
+      "label": "构造订单快照",
+      "sublabel": "地址、商品、规格及组成",
+      "yOffset": 165,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 85,
+          "end_line": 123
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 71,
+          "end_line": 104
+        }
+      ],
+      "tag": "现价 × 数量后合计"
+    },
+    {
+      "id": "persist",
+      "lane": "checkout",
+      "col": 1,
+      "type": "database",
+      "label": "落库订单与明细",
+      "sublabel": "UNPAID · 初始版本 0",
+      "yOffset": 275,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 108,
+          "end_line": 127
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/infrastructure/persistence/JpaOrderRepository.java",
+          "line": 21,
+          "end_line": 34
+        }
+      ]
+    },
+    {
+      "id": "settle",
+      "lane": "checkout",
+      "col": 1,
+      "type": "database",
+      "label": "只清理所选匹配项",
+      "sublabel": "再次校验购物车版本",
+      "yOffset": 385,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/cart/application/CartCheckoutService.java",
+          "line": 48,
+          "end_line": 55
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/cart/domain/ShoppingCart.java",
+          "line": 96,
+          "end_line": 104
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/cart/infrastructure/persistence/JpaCartRepository.java",
+          "line": 37,
+          "end_line": 51
+        }
+      ],
+      "tag": "保留其他条目；ORM 并发保护"
+    },
+    {
+      "id": "event",
+      "lane": "checkout",
+      "col": 1,
+      "type": "messagebus",
+      "label": "登记 OrderChanged",
+      "sublabel": "与订单、购物车同事务提交",
+      "yOffset": 495,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 124,
+          "end_line": 127
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderEvents.java",
+          "line": 16,
+          "end_line": 31
+        }
+      ],
+      "tag": "任一失败整体回滚"
+    },
+    {
+      "id": "unpaid",
+      "lane": "checkout",
+      "col": 1,
+      "type": "backend",
+      "label": "待支付 · 原单可重试",
+      "sublabel": "201 · Replayed=false",
+      "yOffset": 605,
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderService.java",
+          "line": 124,
+          "end_line": 127
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/web/app/OrderController.java",
+          "line": 42,
+          "end_line": 59
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 126,
+          "end_line": 138
+        }
+      ],
+      "tag": "支付期限＝创建后 15 分钟"
+    },
+    {
+      "id": "reserve",
+      "lane": "pay",
+      "col": 1,
+      "type": "database",
+      "label": "登记唯一支付意图",
+      "sublabel": "锁顾客、锁订单及版本校验",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderLifecycleService.java",
+          "line": 47,
+          "end_line": 65
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/payment/application/PaymentTransactions.java",
+          "line": 47,
+          "end_line": 79
+        }
+      ],
+      "tag": "原键原版本可重放"
+    },
+    {
+      "id": "parameters",
+      "lane": "pay",
+      "col": 3,
+      "type": "backend",
+      "label": "事务外签发 App 参数",
+      "sublabel": "PENDING 且未取消、未过期",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderPaymentService.java",
+          "line": 10,
+          "end_line": 28
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/payment/domain/Payment.java",
+          "line": 110,
+          "end_line": 115
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/payment/application/PaymentFacade.java",
+          "line": 56,
+          "end_line": 76
+        }
+      ],
+      "tag": "支付配置必须可用"
+    },
+    {
+      "id": "payretry",
+      "lane": "pay",
+      "col": 5,
+      "type": "frontend",
+      "label": "重试同一支付单",
+      "sublabel": "失败或响应丢失沿用原键",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderLifecycleService.java",
+          "line": 47,
+          "end_line": 65
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/payment/application/PaymentTransactions.java",
+          "line": 59,
+          "end_line": 78
+        }
+      ],
+      "tag": "不延长支付期限"
+    }
+  ],
+  "edges": [
+    {
+      "id": "checkout-0",
+      "from": "request",
+      "to": "lock",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checkout-1",
+      "from": "lock",
+      "to": "lookup",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checkout-2",
+      "from": "lookup",
+      "to": "address",
+      "label": "无原单",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checkout-3",
+      "from": "address",
+      "to": "shop",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checkout-4",
+      "from": "shop",
+      "to": "selected",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checkout-5",
+      "from": "selected",
+      "to": "quote",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checkout-6",
+      "from": "quote",
+      "to": "snapshot",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checkout-7",
+      "from": "snapshot",
+      "to": "persist",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checkout-8",
+      "from": "persist",
+      "to": "settle",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checkout-9",
+      "from": "settle",
+      "to": "event",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checkout-10",
+      "from": "event",
+      "to": "unpaid",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "found",
+      "from": "lookup",
+      "to": "same",
+      "label": "已有原单",
+      "role": "branch"
+    },
+    {
+      "id": "same-request",
+      "from": "same",
+      "to": "replayed",
+      "label": "相同",
+      "role": "branch"
+    },
+    {
+      "id": "changed-request",
+      "from": "same",
+      "to": "conflict",
+      "label": "不同",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "id": "begin-payment",
+      "from": "unpaid",
+      "to": "reserve",
+      "label": "用户发起支付"
+    },
+    {
+      "id": "sign",
+      "from": "reserve",
+      "to": "parameters",
+      "label": "意图提交后"
+    },
+    {
+      "id": "parameter-retry",
+      "from": "parameters",
+      "to": "payretry",
+      "label": "需重试",
+      "role": "branch"
+    },
+    {
+      "id": "retry-intent",
+      "from": "payretry",
+      "to": "reserve",
+      "label": "同键同请求",
+      "role": "return",
+      "route": "bottom-channel",
+      "fromSide": "bottom",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "请求校验与重放顺序",
+      "items": [
+        "addressId 非空，addressVersion / cartVersion ≥ 0；itemIds 为 1–50 个非空且不重复的 UUID。",
+        "Idempotency-Key 匹配 [A-Za-z0-9._:-]{1,128}。摘要为地址 ID、地址版本、购物车版本及排序后条目 ID。",
+        "先锁顾客并重验账号有效性及身份版本；同键同摘要直接返回原单当前详情，跳过地址、营业、目录及购物车实时检查。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "事实校验失败即终止",
+      "items": [
+        "地址归属或版本错误、门店非 OPEN、购物车版本变化或条目缺失均拒绝本次新建；异常使整个事务回滚。",
+        "商品必须存在且上架、分类启用；菜品必选口味须有效；套餐不得提交独立口味，组成菜品与预设口味逐项校验。",
+        "价格来自当前数据库目录，客户端不提交价格；服务端以现价乘数量计算行小计和订单总额。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "原子提交及原单支付重试",
+      "items": [
+        "订单、明细快照、所选购物车项移除和 OrderChanged 登记共用事务；购物车版本冲突不会误删并发变更。",
+        "首次下单返回 201；原请求重放返回 200；均有 Location 和 Idempotency-Replayed。",
+        "支付是后续用例：新支付仅限未过期 UNPAID 且无意图；同支付键必须保留首次提交的订单版本，异键不得重复创建。",
+        "签发异常时原支付意图可能已提交，可用原键原请求重试；重放可发生于订单后续状态，不再新建支付单。",
+        "仅支付 PENDING、无关闭意图且未过期时签发参数；否则返回当前支付信息且 orderString=null。App 返回成功不能推进订单。"
+      ]
+    }
+  ]
+}

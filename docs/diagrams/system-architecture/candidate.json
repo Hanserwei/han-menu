@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Han Menu · 本机容器运行架构",
+    "locale": "zh-CN",
+    "output": "docs/diagrams/system-architecture/system-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:Hanserwei/han-menu.git",
+      "revision": "95431d18ac78fd9fc45a88a6e716783b928654d4",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "admin-browser", "type": "frontend", "label": "PC 管理端", "sublabel": "Vue 3 · TypeScript", "pos": [40, 210], "size": [156, 68],
+      "sources": [{"path": "admin/package.json", "line": 25, "end_line": 34}]
+    },
+    {
+      "id": "nginx", "type": "cloud", "label": "Nginx 入口", "sublabel": "127.0.0.1:18080", "pos": [325, 210], "size": [156, 68],
+      "sources": [{"path": "admin/deploy/nginx.conf.template", "line": 28, "end_line": 45}, {"path": "scripts/deploy-local.py", "line": 114, "end_line": 133}]
+    },
+    {
+      "id": "backend", "type": "backend", "label": "Spring Boot 应用", "sublabel": "Java 25 · 九个业务模块", "pos": [610, 210], "size": [170, 76], "tag": "单进程 / 单 JAR",
+      "sources": [{"path": "src/main/java/com/hanserwei/hanmenu/HanMenuApplication.java", "line": 7, "end_line": 22}, {"path": "src/main/resources/application.yml", "line": 7, "end_line": 35}, {"path": "src/main/resources/application.yml", "line": 77, "end_line": 100}]
+    },
+    {
+      "id": "postgres", "type": "database", "label": "PostgreSQL", "sublabel": "业务数据 · 事件登记", "pos": [925, 210], "size": [156, 68],
+      "sources": [{"path": "infra/local-app/compose.yml", "line": 3, "end_line": 17}, {"path": "docs/ARCHITECTURE.md", "line": 39, "end_line": 50}]
+    },
+    {
+      "id": "redis", "type": "database", "label": "Redis", "sublabel": "登录限流 · 公开目录缓存", "pos": [610, 40], "size": [170, 68],
+      "sources": [{"path": "infra/local-app/compose.yml", "line": 27, "end_line": 39}, {"path": "docs/ARCHITECTURE.md", "line": 95, "end_line": 101}, {"path": "docs/ARCHITECTURE.md", "line": 125, "end_line": 128}]
+    },
+    {
+      "id": "rustfs", "type": "database", "label": "RustFS 私有桶", "sublabel": "商品图片 · S3 兼容", "pos": [610, 430], "size": [170, 68],
+      "sources": [{"path": "infra/local-app/compose.yml", "line": 49, "end_line": 67}, {"path": "scripts/deploy-local.py", "line": 119, "end_line": 125}]
+    },
+    {
+      "id": "alipay", "type": "external", "label": "支付宝沙箱", "sublabel": "创建 / 查询 / 关单 / 退款", "pos": [925, 430], "size": [184, 68],
+      "sources": [{"path": "src/main/resources/application.yml", "line": 77, "end_line": 85}, {"path": "docs/ARCHITECTURE.md", "line": 139, "end_line": 147}]
+    }
+  ],
+  "connections": [
+    {"id": "open-admin", "from": "admin-browser", "to": "nginx", "label": "同源 HTTP", "variant": "emphasis"},
+    {"id": "proxy-api", "from": "nginx", "to": "backend", "label": "HTTP / WS", "variant": "emphasis"},
+    {"id": "jpa-store", "from": "backend", "to": "postgres", "label": "JPA / SQL"},
+    {"id": "cache-limit", "from": "backend", "to": "redis", "label": "限流 / 缓存"},
+    {"id": "image-write", "from": "backend", "to": "rustfs", "label": "S3 上传 / 签名"},
+    {"id": "image-read", "from": "nginx", "to": "rustfs", "label": "签名图片代理"},
+    {"id": "sandbox-api", "from": "backend", "to": "alipay", "label": "签名渠道请求"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "运行边界", "items": ["图示独立本机五容器实例；生产入口改用 HTTPS / WSS。", "数据库、缓存和私有图片使用固定宿主目录持久化。"]},
+    {"dot": "emerald", "title": "可靠业务协作", "items": ["九个业务模块共享一个进程；业务更新与 JPA 事件登记同事务。", "缓存不决定商品、价格或门店的权威状态。"]},
+    {"dot": "rose", "title": "支付与客户端", "items": ["支付成功由服务端验签通知或查单确认；回调需配置可达 HTTPS 地址。", "Flutter 顾客 App 尚未创建；顾客 API 与沙箱后端已实现。"]}
+  ]
+}

@@ -1,0 +1,393 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "订单完整生命周期 · 支付、取消与退款恢复",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": "docs/diagrams/order-lifecycle/order-lifecycle.html",
+    "repository": {
+      "url": "git@github.com:Hanserwei/han-menu.git",
+      "revision": "95431d18ac78fd9fc45a88a6e716783b928654d4",
+      "link_mode": "local-only"
+    }
+  },
+  "mainPath": [
+    "unpaid",
+    "paid",
+    "accepted",
+    "delivering",
+    "completed"
+  ],
+  "states": [
+    {
+      "id": "unpaid",
+      "type": "start",
+      "label": "UNPAID",
+      "sublabel": "待支付",
+      "tag": "15 分钟到期",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 83,
+          "end_line": 205
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderLifecycleService.java",
+          "line": 47,
+          "end_line": 65
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/payment/application/PaymentTransactions.java",
+          "line": 47,
+          "end_line": 79
+        }
+      ]
+    },
+    {
+      "id": "paid",
+      "type": "waiting",
+      "label": "PAID",
+      "sublabel": "已付款待接单",
+      "tag": "发布 OrderReady",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 141,
+          "end_line": 194
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 229,
+          "end_line": 235
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderLifecycleService.java",
+          "line": 116,
+          "end_line": 135
+        }
+      ]
+    },
+    {
+      "id": "accepted",
+      "type": "active",
+      "label": "ACCEPTED",
+      "sublabel": "商家已接单",
+      "tag": "仅员工可开始配送",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 141,
+          "end_line": 165
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 229,
+          "end_line": 251
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderLifecycleService.java",
+          "line": 76,
+          "end_line": 97
+        }
+      ]
+    },
+    {
+      "id": "delivering",
+      "type": "active",
+      "label": "DELIVERING",
+      "sublabel": "配送中",
+      "tag": "仅员工可完成",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 237,
+          "end_line": 251
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderLifecycleService.java",
+          "line": 76,
+          "end_line": 97
+        }
+      ]
+    },
+    {
+      "id": "completed",
+      "type": "success",
+      "label": "COMPLETED",
+      "sublabel": "已完成",
+      "tag": "履约终态",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 245,
+          "end_line": 251
+        }
+      ]
+    },
+    {
+      "id": "cancelling",
+      "type": "waiting",
+      "label": "CANCELLING",
+      "sublabel": "等待渠道关单",
+      "tag": "取消意图已登记",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 140,
+          "end_line": 227
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/application/OrderLifecycleService.java",
+          "line": 174,
+          "end_line": 179
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/payment/application/PaymentReconciliation.java",
+          "line": 36,
+          "end_line": 53
+        }
+      ]
+    },
+    {
+      "id": "refunding",
+      "type": "waiting",
+      "label": "REFUNDING",
+      "sublabel": "全额退款处理中",
+      "tag": "退款 PENDING",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 140,
+          "end_line": 227
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/payment/domain/Refund.java",
+          "line": 57,
+          "end_line": 108
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/payment/application/PaymentReconciliation.java",
+          "line": 56,
+          "end_line": 74
+        }
+      ]
+    },
+    {
+      "id": "cancelled",
+      "type": "neutral",
+      "label": "CANCELLED",
+      "sublabel": "已取消",
+      "tag": "不再恢复履约",
+      "sources": [
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 167,
+          "end_line": 227
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/ordering/domain/Order.java",
+          "line": 265,
+          "end_line": 315
+        },
+        {
+          "path": "src/main/java/com/hanserwei/hanmenu/payment/domain/Refund.java",
+          "line": 77,
+          "end_line": 108
+        }
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "id": "paid-on-time",
+      "from": "unpaid",
+      "to": "paid",
+      "label": "SUCCEEDED",
+      "note": "paidAt < 到期",
+      "variant": "emphasis"
+    },
+    {
+      "id": "accept",
+      "from": "paid",
+      "to": "accepted",
+      "label": "商家接单",
+      "note": "员工·验版本",
+      "variant": "emphasis"
+    },
+    {
+      "id": "deliver",
+      "from": "accepted",
+      "to": "delivering",
+      "label": "开始配送",
+      "note": "员工·验版本",
+      "variant": "emphasis"
+    },
+    {
+      "id": "complete",
+      "from": "delivering",
+      "to": "completed",
+      "label": "确认完成",
+      "note": "员工·验版本",
+      "variant": "emphasis"
+    },
+    {
+      "id": "payment-intent",
+      "from": "unpaid",
+      "to": "unpaid",
+      "label": "首次登记支付",
+      "note": "未过期＋无意图＋版本",
+      "variant": "default"
+    },
+    {
+      "id": "cancel-no-payment",
+      "from": "unpaid",
+      "to": "cancelled",
+      "label": "顾客取消／超时",
+      "note": "无支付单；版本匹配",
+      "variant": "security"
+    },
+    {
+      "id": "cancel-with-payment",
+      "from": "unpaid",
+      "to": "cancelling",
+      "label": "顾客取消／超时",
+      "note": "有支付单；版本匹配",
+      "variant": "security"
+    },
+    {
+      "id": "payment-closed",
+      "from": "unpaid",
+      "to": "cancelled",
+      "label": "CLOSED",
+      "note": "未记录付款",
+      "variant": "default"
+    },
+    {
+      "id": "late-payment",
+      "from": "unpaid",
+      "to": "refunding",
+      "label": "SUCCEEDED",
+      "note": "paidAt ≥ 到期",
+      "variant": "security"
+    },
+    {
+      "id": "paid-cancel",
+      "from": "paid",
+      "to": "refunding",
+      "label": "取消／拒单",
+      "note": "顾客／商家；版本匹配",
+      "variant": "security"
+    },
+    {
+      "id": "accepted-cancel",
+      "from": "accepted",
+      "to": "refunding",
+      "label": "商家取消",
+      "note": "员工·验版本",
+      "variant": "security"
+    },
+    {
+      "id": "cancelling-payment",
+      "from": "cancelling",
+      "to": "refunding",
+      "label": "SUCCEEDED",
+      "note": "唯一全额退款",
+      "variant": "security"
+    },
+    {
+      "id": "close-confirmed",
+      "from": "cancelling",
+      "to": "cancelled",
+      "label": "CLOSED",
+      "note": "未记录付款",
+      "variant": "default"
+    },
+    {
+      "id": "refund-during-cancel",
+      "from": "cancelling",
+      "to": "cancelled",
+      "label": "退款确认",
+      "note": "引用＋金额匹配",
+      "variant": "default"
+    },
+    {
+      "id": "refund-confirmed",
+      "from": "refunding",
+      "to": "cancelled",
+      "label": "退款确认",
+      "note": "退款→SUCCEEDED",
+      "variant": "emphasis"
+    },
+    {
+      "id": "refund-recovery",
+      "from": "refunding",
+      "to": "refunding",
+      "label": "退款故障／未知",
+      "note": "原号查询后重试",
+      "variant": "dashed"
+    },
+    {
+      "id": "close-recovery",
+      "from": "cancelling",
+      "to": "cancelling",
+      "label": "重试",
+      "variant": "dashed"
+    },
+    {
+      "id": "cancelled-compensation",
+      "from": "cancelled",
+      "to": "cancelled",
+      "label": "补偿",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "实际枚举与状态含义",
+      "items": [
+        "Order.Status 只有图中 8 个状态。PAYING / PREPARING / CLOSED / REFUNDED 均非订单枚举；接单对应 ACCEPTED。",
+        "绑定支付后订单仍为 UNPAID；支付交易另有 PENDING / SUCCEEDED / CLOSED。",
+        "商家接单、开始配送、确认完成与商家取消均要求当前员工授权且订单版本匹配。",
+        "订单 RefundStatus 为 NONE / PENDING / SUCCEEDED；退款交易为 PENDING / SUCCEEDED。取消可与退款处理中并存。",
+        "首次登记支付（UNPAID 自循环）：新意图须未到期、无 paymentId 且订单版本匹配。原支付同键同摘要可在订单后续状态重放，须保留首次请求的订单版本；不可支付时 orderString=null，不改变订单状态。",
+        "顾客取消／超时（UNPAID 出口）：超时仅在 now ≥ expiresAt；取消须当前顾客有效及订单版本匹配，任务使用锁内当前版本；有支付单时登记关闭意图。",
+        "取消／拒单（PAID → REFUNDING）：顾客取消、员工拒单或员工取消均须版本匹配；REFUNDING 为全额退款，退款失败不恢复到 PAID。",
+        "退款确认出口及自循环：RefundResult 必须匹配 paymentId、订单全额金额；重复成功必须匹配原 refundId；成功后 RefundStatus=SUCCEEDED。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "可信事实、时间与竞争条件",
+      "items": [
+        "所有支付结果先锁订单，核对顾客归属、paymentId 与全额金额；退款确认核对 paymentId、金额及重复退款号。",
+        "15 分钟期限固定为 createdAt + 900 秒；超时任务只处理 UNPAID，和支付消费者以同一订单行锁竞争。",
+        "付款是否及时取决于渠道 paidAt：回执到达较晚但付款时间早于期限、订单仍 UNPAID 时可进入 PAID；若超时取消先提交，即使付款时间早于期限也退款。",
+        "仅真实查询或验签结果推进支付事实；NOT_FOUND 到期再过 120 秒才确认 CLOSED；CLOSED 每 600 秒复查，到 expiresAt + 24 小时停止周期复查。"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "取消、退款与恢复不会恢复履约",
+      "items": [
+        "PAID 可由顾客取消、商家拒单或商家取消；ACCEPTED 只允许商家取消；DELIVERING / COMPLETED 无取消出口。",
+        "取消先持久化支付关闭或退款意图，再由事务外工作器查询、关单或全额退款；退款号在原支付锁内唯一登记。",
+        "退款故障／未知（REFUNDING 自循环）保留 PENDING，无 FAILED 终态及最大重试次数；领取窗口 60 秒，失败 30 秒后原号先查再重试。退款后原支付仍为 SUCCEEDED。",
+        "重试（CANCELLING 自循环）：查单／关单异常只保留原意图，待支付 30 秒后重试，不将受理或故障当作取消完成。",
+        "CANCELLED 遇迟到付款只更新退款状态，不返回 PAID；退款成功后仍保持 CANCELLED。",
+        "补偿（CANCELLED 自循环）：迟到 SUCCEEDED 在退款尚未成功时置 RefundStatus=PENDING 并登记唯一全额退款；退款已先成功则只补记 paidAt，不重开退款。RefundResult 确认后置为 SUCCEEDED；故障或未知按原退款号查询、重试；始终保持 CANCELLED。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "幂等结果与事件恢复",
+      "items": [
+        "付款已记录后，重复成功只在退款待处理时补登记退款；paidAt 已存在时乱序 CLOSED 被忽略，不覆盖付款。",
+        "退款成功重复投递必须使用同一 refundId；成功退款后迟到付款不再次开启退款。",
+        "状态更新与 OrderChanged 同事务登记；只有首次 UNPAID → PAID 发布 OrderReady。",
+        "PaymentResult / RefundResult 通过 ApplicationModuleListener 独立事务消费；失败登记可重投，订单行锁和聚合规则保持幂等。"
+      ]
+    }
+  ]
+}
